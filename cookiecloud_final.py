@@ -63,21 +63,27 @@ class CookieCloudClient:
             # 去除PKCS7填充
             pad_len = decrypted_padded[-1]
             if 0 < pad_len <= 16:
-                decrypted = decrypted_padded[:-pad_len]
-                print(f"📏 去除{pad_len}字节填充")
+                if all(b == pad_len for b in decrypted_padded[-pad_len:]):
+                    decrypted = decrypted_padded[:-pad_len]
+                else:
+                    decrypted = decrypted_padded  # 填充验证失败，不去除
             else:
                 decrypted = decrypted_padded
                 print("⚠️ 使用未去除填充的数据")
             
             print(f"✅ 解密成功，数据长度: {len(decrypted)}字节")
             
-            # 解析JSON
+            # 解析JSON 先尝试 latin-1（不会失败），再尝试 utf-8
+
             try:
-                # 尝试UTF-8解码
-                decrypted_str = decrypted.decode('utf-8')
-            except UnicodeDecodeError:
-                # 如果UTF-8失败，尝试latin-1
                 decrypted_str = decrypted.decode('latin-1')
+                data = json.loads(decrypted_str)
+            except:
+                try:
+                    decrypted_str = decrypted.decode('utf-8')
+                    data = json.loads(decrypted_str)
+                except:
+                return None
             
             data = json.loads(decrypted_str)
             print(f"📄 解析出{len(data.get('cookie_data', {}))}个域名的Cookie")

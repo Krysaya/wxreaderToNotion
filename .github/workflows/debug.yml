@@ -31,5 +31,5 @@ jobs:
         COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
       run: |
         echo "=== 详细诊断开始 ==="
-        python debug_cookiecloud_raw.py
+        python check_password.py
         
