@@ -27,4 +27,4 @@ jobs:
         COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
       run: |
         echo "=== 测试正确的解密方法 ==="
-        python test_new_password.py
+        python verify_cookiecloud_data.py
