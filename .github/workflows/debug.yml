@@ -19,6 +19,10 @@ jobs:
     - name: Install dependencies
       run: |
         pip install requests
+    
+    - name: Install dependencies
+      run: |
+        pip install requests cryptography
         
     - name: Run Detailed Debug
       env:
