@@ -20,10 +20,16 @@ jobs:
       run: |
         pip install requests
         
-    - name: Debug CookieCloud
+    - name: Run Detailed Debug
       env:
         COOKIECLOUD_SERVER: ${{ secrets.COOKIECLOUD_SERVER }}
         COOKIECLOUD_UUID: ${{ secrets.COOKIECLOUD_UUID }}
         COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
       run: |
-        python debug_cookiecloud.py
+        echo "=== 详细诊断开始 ==="
+        python detailed_debug.py
+        
+    - name: Test Public Servers
+      run: |
+        echo "=== 测试公共服务器 ==="
+        python test_public_server.py
