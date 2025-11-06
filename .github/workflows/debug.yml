@@ -27,9 +27,5 @@ jobs:
         COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
       run: |
         echo "=== 详细诊断开始 ==="
-        python detailed_debug.py
+        python debug_decrypt.py
         
-    - name: Test Public Servers
-      run: |
-        echo "=== 测试公共服务器 ==="
-        python test_public_server.py
