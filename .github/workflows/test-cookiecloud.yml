@@ -27,4 +27,4 @@ jobs:
         COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
       run: |
         echo "=== 测试正确的解密方法 ==="
-        python test_nodejs_crypto.py
+        python test_chenge_server.py
