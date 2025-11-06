@@ -24,12 +24,21 @@ class CookieCloudClient:
         try:
             # 构建请求 URL
             url = f"{self.server_url}/get/{self.uuid}"
-            
+            print(f"🕵️‍♂️ 尝试从 URL 获取数据: {url}") # 新增日志
+        
             # 发送请求
             response = requests.get(url, timeout=10)
-            
+            print(f"📡 响应状态码: {response.status_code}") # 新增日志
+        
             if response.status_code == 200:
-                data = response.json()
+                # 尝试解析响应为JSON
+                try:
+                    data = response.json()
+                except json.JSONDecodeError as e:
+                    print(f"❌ 服务器响应不是有效的 JSON: {response.text}") # 新增日志
+                    return None
+
+                print(f"📄 原始响应数据: {data}") # 新增日志，注意这会输出密码，调试后可删除
                 
                 if data.get('status') == 'success':
                     # 解密数据
@@ -42,13 +51,21 @@ class CookieCloudClient:
                     else:
                         print("❌ 数据解密失败")
                 else:
-                    print(f"❌ CookieCloud 返回错误: {data.get('message')}")
+                    # 输出服务器返回的具体错误信息
+                    error_message = data.get('message', 'Unknown error')
+                    print(f"❌ CookieCloud 返回错误: {error_message}") # 增强日志
             else:
                 print(f"❌ 请求失败，状态码: {response.status_code}")
+                print(f"❌ 请求失败，响应内容: {response.text}") # 新增日志
                 
+        except requests.exceptions.ConnectionError as e:
+            print(f"❌ 网络连接错误，无法到达服务器: {e}")
+        except requests.exceptions.Timeout as e:
+            print(f"❌ 请求超时: {e}")
         except Exception as e:
-            print(f"❌ 获取 Cookie 失败: {e}")
-            
+            print(f"❌ 获取 Cookie 时发生未知异常: {e}")
+            import traceback
+                traceback.print_exc() # 打印完整的异常堆栈
         return None
     
     def _decrypt_data(self, encrypted_data: str) -> Optional[Dict]:
