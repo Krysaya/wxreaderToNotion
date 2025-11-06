@@ -26,5 +26,5 @@ jobs:
         COOKIECLOUD_UUID: ${{ secrets.COOKIECLOUD_UUID }}
         COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
       run: |
-        echo "=== 测试正确的解密方法 ==="
-        python test_chenge_server.py
+        echo "=== 测试 ==="
+        python test_manual_cookies.py
