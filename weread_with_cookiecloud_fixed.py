@@ -1,12 +1,12 @@
 import requests
 import json
 import time
-from cookiecloud_client import CookieCloudClient
+from cookiecloud_client_fixed import CookieCloudClient
 
 class WeReadWithCookieCloud:
     def __init__(self, cookiecloud_server: str, cookiecloud_uuid: str, cookiecloud_password: str):
         """
-        使用 CookieCloud 的微信读书客户端
+        使用 CookieCloud 的微信读书客户端 - 修复版
         """
         self.cookiecloud = CookieCloudClient(cookiecloud_server, cookiecloud_uuid, cookiecloud_password)
         self.session = requests.Session()
@@ -25,6 +25,7 @@ class WeReadWithCookieCloud:
     def refresh_cookies(self) -> bool:
         """从 CookieCloud 刷新 Cookie"""
         try:
+            print("🔄 刷新 Cookie...")
             cookies = self.cookiecloud.get_cookies()
             if cookies:
                 # 清空现有 Cookie
@@ -33,6 +34,9 @@ class WeReadWithCookieCloud:
                 # 添加新的 Cookie
                 for name, value in cookies.items():
                     self.session.cookies.set(name, value)
+                    # 同时设置到 headers（某些 API 需要）
+                    if name in ['wr_fp', 'wr_gid', 'wr_rt', 'wr_localid', 'wr_pf', 'wr_skey']:
+                        self.session.headers[name] = value
                 
                 print("✅ Cookie 刷新成功")
                 return True
@@ -60,6 +64,7 @@ class WeReadWithCookieCloud:
                 return books
             else:
                 print(f"❌ 获取书架失败: {response.status_code}")
+                print(f"📄 响应: {response.text[:200]}...")
                 return []
                 
         except Exception as e:
@@ -92,5 +97,11 @@ class WeReadWithCookieCloud:
     
     def test_auth(self) -> bool:
         """测试认证是否有效"""
+        print("🧪 测试微信读书认证...")
         books = self.get_bookshelf()
-        return len(books) > 0
+        success = len(books) > 0
+        if success:
+            print("✅ 微信读书认证成功")
+        else:
+            print("❌ 微信读书认证失败")
+        return success

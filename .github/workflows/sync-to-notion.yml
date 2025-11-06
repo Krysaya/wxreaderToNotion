@@ -1,8 +1,8 @@
-name: Sync WeRead to Notion with CookieCloud
+name: Sync WeRead to Notion with CookieCloud Fixed
 
 on:
   schedule:
-    - cron: '0 18 * * *'  # 每天UTC 18:00
+    - cron: '0 18 * * *'
   workflow_dispatch:
 
 jobs:
@@ -20,17 +20,24 @@ jobs:
         
     - name: Install dependencies
       run: |
-        pip install requests
+        pip install -r requirements.txt
         
-    - name: Sync with CookieCloud
+    - name: Test CookieCloud Connection
       env:
-        # CookieCloud 配置
         COOKIECLOUD_SERVER: ${{ secrets.COOKIECLOUD_SERVER }}
         COOKIECLOUD_UUID: ${{ secrets.COOKIECLOUD_UUID }}
         COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
+      run: |
+        echo "=== 测试 CookieCloud 连接 ==="
+        python test_cookiecloud_fixed.py
         
-        # Notion 配置
+    - name: Sync WeRead to Notion
+      env:
+        COOKIECLOUD_SERVER: ${{ secrets.COOKIECLOUD_SERVER }}
+        COOKIECLOUD_UUID: ${{ secrets.COOKIECLOUD_UUID }}
+        COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
         NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
         NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
       run: |
+        echo "=== 开始同步 ==="
         python sync_with_cookiecloud.py
