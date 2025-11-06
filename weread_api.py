@@ -19,7 +19,7 @@ class WeReadAPI:
     
     def _refresh_cookies(self) -> bool:
         """刷新Cookie"""
-        cookies = self.cookie_client.get_weread_cookies()
+        cookies = self.cookie_client.extract_weread_cookies()
         if not cookies:
             return False
             
