@@ -2,7 +2,7 @@ import os
 import requests
 import time
 from datetime import datetime
-from weread_with_cookiecloud import WeReadWithCookieCloud
+from weread_cookiecloud_aes128 import WeReadWithCookieCloud
 
 class WeReadToNotionWithCookieCloud:
     def __init__(self):
