@@ -1,11 +1,11 @@
 import requests
 import time
 from typing import List, Dict, Optional
-from cookiecloud_final import CookieCloudClient
+from cookiecloud_nodejs_fixed import CookieCloudNodeJSFixed
 
 class WeReadAPI:
     def __init__(self, cookiecloud_server: str, cookiecloud_uuid: str, cookiecloud_password: str):
-        self.cookie_client = CookieCloudClient(cookiecloud_server, cookiecloud_uuid, cookiecloud_password)
+        self.cookie_client = CookieCloudNodeJSFixed(cookiecloud_server, cookiecloud_uuid, cookiecloud_password)
         self.session = requests.Session()
         self._setup_session()
     
