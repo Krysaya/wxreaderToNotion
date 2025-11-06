@@ -102,6 +102,87 @@ class WeReadToNotionWithCookieCloud:
     def create_notion_page(self, highlight_data):
         """创建 Notion 页面（与之前相同）"""
         # ... 使用之前相同的 Notion 创建逻辑
+            url = 'https://api.notion.com/v1/pages'
+        
+        data = {
+            "parent": {"database_id": self.notion_database_id},
+            "properties": {
+                "书名": {
+                    "title": [
+                        {
+                            "text": {
+                                "content": highlight_data['book_title'][:200]
+                            }
+                        }
+                    ]
+                },
+                "作者": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": highlight_data['book_author'][:200]
+                            }
+                        }
+                    ]
+                },
+                "章节": {
+                    "rich_text": [
+                        {
+                            "text": {
+                                "content": highlight_data['chapter'][:200]
+                            }
+                        }
+                    ]
+                },
+                "日期": {
+                    "date": {
+                        "start": highlight_data['create_time']
+                    }
+                }
+            },
+            "children": [
+                {
+                    "object": "block",
+                    "type": "quote",
+                    "quote": {
+                        "rich_text": [
+                            {
+                                "type": "text",
+                                "text": {
+                                    "content": highlight_data['highlight'][:2000]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+        
+        if highlight_data.get('note'):
+            data["children"].append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": f"📝 笔记：{highlight_data['note'][:1000]}"
+                            }
+                        }
+                    ]
+                }
+            })
+        
+        try:
+            response = requests.post(url, headers=self.notion_headers, json=data)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            print(f"❌ 创建Notion页面失败: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                print(f"响应内容: {e.response.text}")
+            return None
         pass
     
     def sync(self):
