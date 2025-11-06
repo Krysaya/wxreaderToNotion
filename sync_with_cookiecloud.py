@@ -57,7 +57,7 @@ class WeReadToNotionWithCookieCloud:
             books = self.weread_client.get_bookshelf()
             all_highlights = []
             
-            for i, book in enumerate(books[:5]):  # 限制处理前5本书
+            for i, book in enumerate(books[:3]):  # 限制处理前3本书避免超时
                 book_id = book['bookId']
                 book_title = book['title']
                 book_author = book.get('author', '未知作者')
@@ -100,9 +100,8 @@ class WeReadToNotionWithCookieCloud:
             return datetime.now().isoformat() + 'Z'
     
     def create_notion_page(self, highlight_data):
-        """创建 Notion 页面（与之前相同）"""
-        # ... 使用之前相同的 Notion 创建逻辑
-            url = 'https://api.notion.com/v1/pages'
+        """创建 Notion 页面"""
+        url = 'https://api.notion.com/v1/pages'
         
         data = {
             "parent": {"database_id": self.notion_database_id},
@@ -180,10 +179,7 @@ class WeReadToNotionWithCookieCloud:
             return response.json()
         except requests.exceptions.RequestException as e:
             print(f"❌ 创建Notion页面失败: {e}")
-            if hasattr(e, 'response') and e.response is not None:
-                print(f"响应内容: {e.response.text}")
             return None
-        pass
     
     def sync(self):
         """执行同步"""
@@ -198,13 +194,16 @@ class WeReadToNotionWithCookieCloud:
             print("❌ 未获取到数据")
             return
         
-        # 同步到 Notion（使用之前的同步逻辑）
+        # 同步到 Notion
         success_count = 0
         for i, highlight in enumerate(highlights, 1):
-            print(f"🔄 同步第 {i}/{len(highlights)} 条")
+            print(f"🔄 同步第 {i}/{len(highlights)} 条: {highlight['book_title']}")
             result = self.create_notion_page(highlight)
-            if result:
+            if result and 'id' in result:
                 success_count += 1
+                print("  ✅ 同步成功")
+            else:
+                print("  ❌ 同步失败")
             time.sleep(0.3)
         
         print(f"🎉 同步完成！成功 {success_count}/{len(highlights)} 条")
