@@ -1,9 +1,9 @@
-name: Sync WeRead to Notion
+name: Sync WeRead to Notion with CookieCloud
 
 on:
   schedule:
-    - cron: '0 18 * * *'  # 每天UTC 18:00 (北京时间凌晨2点)
-  workflow_dispatch:       # 手动触发
+    - cron: '0 18 * * *'  # 每天UTC 18:00
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -20,12 +20,17 @@ jobs:
         
     - name: Install dependencies
       run: |
-        pip install -r requirements.txt
+        pip install requests
         
-    - name: Sync WeRead to Notion
+    - name: Sync with CookieCloud
       env:
-        WEREAD_REFRESH_TOKEN: ${{ secrets.WEREAD_REFRESH_TOKEN }}
+        # CookieCloud 配置
+        COOKIECLOUD_SERVER: ${{ secrets.COOKIECLOUD_SERVER }}
+        COOKIECLOUD_UUID: ${{ secrets.COOKIECLOUD_UUID }}
+        COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
+        
+        # Notion 配置
         NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
         NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
       run: |
-        python sync_weread_to_notion.py
+        python sync_with_cookiecloud.py
