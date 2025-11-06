@@ -65,7 +65,7 @@ class CookieCloudClient:
         except Exception as e:
             print(f"❌ 获取 Cookie 时发生未知异常: {e}")
             import traceback
-                traceback.print_exc() # 打印完整的异常堆栈
+            traceback.print_exc() # 打印完整的异常堆栈
         return None
     
     def _decrypt_data(self, encrypted_data: str) -> Optional[Dict]:
