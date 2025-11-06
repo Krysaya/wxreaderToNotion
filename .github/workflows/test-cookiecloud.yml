@@ -18,7 +18,7 @@ jobs:
         
     - name: Install dependencies
       run: |
-        pip install requests cryptography
+        pip install requests pycryptodome
         
     - name: Test Correct Decrypt
       env:
