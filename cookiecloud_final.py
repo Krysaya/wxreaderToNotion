@@ -40,7 +40,7 @@ class CookieCloudClient:
             return None
     
     def _decrypt_data(self, encrypted_data: str) -> Optional[Dict]:
-        """解密数据 - 基于MCP Server的实现"""
+        """解密数据"""
         try:
             print("🔐 开始解密数据...")
             
@@ -60,39 +60,83 @@ class CookieCloudClient:
             # 解密
             decrypted_padded = decryptor.update(encrypted_bytes) + decryptor.finalize()
             
-            # 去除PKCS7填充
+            # 改进的填充处理
             pad_len = decrypted_padded[-1]
             if 0 < pad_len <= 16:
-                if all(b == pad_len for b in decrypted_padded[-pad_len:]):
+                # 验证填充是否正确
+                padding = decrypted_padded[-pad_len:]
+                if all(byte == pad_len for byte in padding):
                     decrypted = decrypted_padded[:-pad_len]
+                    print(f"📏 去除{pad_len}字节PKCS7填充")
                 else:
-                    decrypted = decrypted_padded  # 填充验证失败，不去除
+                    decrypted = decrypted_padded
+                    print("⚠️ 填充验证失败，使用未去除填充的数据")
             else:
                 decrypted = decrypted_padded
-                print("⚠️ 使用未去除填充的数据")
+                print("⚠️ 未检测到标准填充")
             
             print(f"✅ 解密成功，数据长度: {len(decrypted)}字节")
             
-            # 解析JSON 先尝试 latin-1（不会失败），再尝试 utf-8
-
-            try:
-                decrypted_str = decrypted.decode('latin-1')
-                data = json.loads(decrypted_str)
-            except:
-                try:
-                    decrypted_str = decrypted.decode('utf-8')
-                    data = json.loads(decrypted_str)
-                except:
-                return None
-            
-            data = json.loads(decrypted_str)
-            print(f"📄 解析出{len(data.get('cookie_data', {}))}个域名的Cookie")
-            
-            return data
+            # 改进的JSON解析 - 按优先级尝试多种方式
+            return self._parse_json_with_fallback(decrypted)
             
         except Exception as e:
             print(f"❌ 解密失败: {e}")
+            import traceback
+            traceback.print_exc()
             return None
+
+    def _parse_json_with_fallback(self, data_bytes: bytes) -> Optional[Dict]:
+        """改进的JSON解析，支持多种fallback方案"""
+        
+        # 方案1: 直接尝试UTF-8
+        try:
+            data_str = data_bytes.decode('utf-8')
+            data = json.loads(data_str)
+            print("✅ 使用UTF-8编码解析成功")
+            return data
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            print(f"❌ UTF-8解析失败: {e}")
+        
+        # 方案2: 尝试UTF-8-sig (BOM)
+        try:
+            data_str = data_bytes.decode('utf-8-sig')
+            data = json.loads(data_str)
+            print("✅ 使用UTF-8-sig编码解析成功")
+            return data
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            print(f"❌ UTF-8-sig解析失败: {e}")
+        
+        # 方案3: 尝试latin-1 (不会解码失败)
+        try:
+            data_str = data_bytes.decode('latin-1')
+            data = json.loads(data_str)
+            print("✅ 使用latin-1编码解析成功")
+            return data
+        except json.JSONDecodeError as e:
+            print(f"❌ latin-1 JSON解析失败: {e}")
+            # 显示数据开头帮助调试
+            preview = data_str[:200] if len(data_str) > 200 else data_str
+            print(f"🔍 数据预览: {repr(preview)}")
+        
+        # 方案4: 尝试去除BOM和其他不可见字符
+        try:
+            # 去除可能的BOM和特殊字符
+            cleaned_bytes = data_bytes.lstrip(b'\xef\xbb\xbf\x00\x20\x09\x0a\x0d')
+            data_str = cleaned_bytes.decode('utf-8', errors='ignore').strip()
+            data = json.loads(data_str)
+            print("✅ 使用清理后数据解析成功")
+            return data
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+            print(f"❌ 清理后数据解析失败: {e}")
+        
+        # 方案5: 显示原始数据帮助调试
+        print("🔍 原始字节数据分析:")
+        print(f"   前100字节: {data_bytes[:100]}")
+        print(f"   前100字节(hex): {data_bytes[:100].hex()}")
+        print(f"   数据开头字符: {chr(data_bytes[0]) if data_bytes else '空'}")
+        
+        return None
     
     def get_weread_cookies(self) -> Optional[Dict]:
         """专门获取微信读书的Cookie"""
