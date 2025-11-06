@@ -107,19 +107,62 @@ class CookieCloudClient:
             
             print(f"✅ 解密成功，数据长度: {len(decrypted)} 字节")
             
-            # 8. 解析 JSON
-            decrypted_str = decrypted.decode('utf-8')
-            data = json.loads(decrypted_str)
-            
-            print(f"📄 解密数据键: {list(data.keys())}")
-            return data
+            # 8. 尝试多种编码方式解析 JSON
+            return self._parse_decrypted_data(decrypted)
+
             
         except Exception as e:
             print(f"❌ AES-128-CBC 解密失败: {e}")
             import traceback
             traceback.print_exc()
             return None
-    
+    def _parse_decrypted_data(self, decrypted_bytes: bytes) -> Optional[Dict]:
+        """
+        尝试多种编码方式解析解密后的数据
+        """
+        encodings = ['utf-8', 'utf-8-sig', 'latin-1', 'iso-8859-1', 'cp1252']
+        
+        for encoding in encodings:
+            try:
+                print(f"🔄 尝试使用 {encoding} 编码解析...")
+                decrypted_str = decrypted_bytes.decode(encoding)
+                data = json.loads(decrypted_str)
+                print(f"✅ 使用 {encoding} 编码解析成功")
+                print(f"📄 解密数据键: {list(data.keys())}")
+                return data
+            except UnicodeDecodeError as e:
+                print(f"❌ {encoding} 解码失败: {e}")
+                continue
+            except json.JSONDecodeError as e:
+                print(f"❌ {encoding} JSON解析失败: {e}")
+                # 显示前100个字符帮助调试
+                try:
+                    preview = decrypted_bytes.decode(encoding, errors='ignore')[:100]
+                    print(f"🔍 数据预览: {preview}")
+                except:
+                    print(f"🔍 字节数据预览: {decrypted_bytes[:100]}")
+                continue
+        
+        # 如果所有编码都失败，尝试直接处理字节数据
+        print("🔍 尝试直接分析字节数据...")
+        try:
+            # 检查是否是有效的JSON结构
+            if decrypted_bytes.startswith(b'{') and decrypted_bytes.endswith(b'}'):
+                print("✅ 字节数据看起来像JSON")
+                # 尝试使用 latin-1 编码（不会失败）
+                decrypted_str = decrypted_bytes.decode('latin-1')
+                data = json.loads(decrypted_str)
+                print("✅ 使用 latin-1 编码解析成功")
+                return data
+        except:
+            pass
+        
+        print("❌ 所有编码方式都失败")
+        print(f"🔍 原始字节数据前100字节: {decrypted_bytes[:100]}")
+        print(f"🔍 原始字节数据hex: {decrypted_bytes[:100].hex()}")
+        return None
+
+
     def _extract_weread_cookies(self, cookie_data: Dict) -> Optional[Dict]:
         """
         从 CookieCloud 数据中提取微信读书的 Cookie

@@ -20,20 +20,20 @@ jobs:
       run: |
         pip install requests cryptography
         
-    - name: Test AES-128-CBC Decryption
+    - name: Debug Decrypted Data
       env:
         COOKIECLOUD_SERVER: ${{ secrets.COOKIECLOUD_SERVER }}
         COOKIECLOUD_UUID: ${{ secrets.COOKIECLOUD_UUID }}
         COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
       run: |
-        echo "=== 测试 AES-128-CBC 解密 ==="
-        python test_aes128.py
+        echo "=== 调试解密数据 ==="
+        python debug_decrypted_data.py
         
-    - name: Test WeRead API
+    - name: Test Fixed Client
       env:
         COOKIECLOUD_SERVER: ${{ secrets.COOKIECLOUD_SERVER }}
         COOKIECLOUD_UUID: ${{ secrets.COOKIECLOUD_UUID }}
         COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
       run: |
-        echo "=== 测试微信读书 API ==="
-        python test_weread_api.py
+        echo "=== 测试修复后的客户端 ==="
+        python test_aes128.py
