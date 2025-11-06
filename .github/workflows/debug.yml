@@ -1,0 +1,29 @@
+name: Debug CookieCloud
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        pip install requests
+        
+    - name: Debug CookieCloud
+      env:
+        COOKIECLOUD_SERVER: ${{ secrets.COOKIECLOUD_SERVER }}
+        COOKIECLOUD_UUID: ${{ secrets.COOKIECLOUD_UUID }}
+        COOKIECLOUD_PASSWORD: ${{ secrets.COOKIECLOUD_PASSWORD }}
+      run: |
+        python debug_cookiecloud.py
