@@ -387,7 +387,7 @@ if __name__ == "__main__":
     client = Client(
         auth=notion_token,
         log_level=logging.ERROR
-        notion_version="2025-09-03"  # 确保指定了此版本
+        # notion_version="2025-09-03"
 
     )
     # 调试代码：检查query方法是否存在
