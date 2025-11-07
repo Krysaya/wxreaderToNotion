@@ -285,7 +285,8 @@ def main(weread_token, notion_token, database_id):
         # 初始化session
         session = requests.Session()
         session.cookies.update(parse_cookie_string(weread_token))
-        
+        session.get(WEREAD_URL)
+
         # 测试Notion连接
         print("测试Notion连接...")
         db_info = get_database_info(database_id, notion_token)
