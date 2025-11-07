@@ -386,7 +386,7 @@ if __name__ == "__main__":
     session.cookies = parse_cookie_string(weread_token)
     client = Client(
         auth=notion_token,
-        notionVersion: "2025-0-28",
+        Version: "2025-0-28",
         log_level=logging.ERROR
 
     )
