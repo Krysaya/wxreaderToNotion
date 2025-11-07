@@ -172,7 +172,7 @@ def check(bookId):
             "equals": bookId
         }
     }
-    response = client.databases.retrieve(database_id=database_id, filter=filter)
+    response = client.databases.query(**{database_id=database_id, filter=filter})
     for result in response["results"]:
         time.sleep(0.3)
         client.blocks.delete(block_id=result["id"])
@@ -289,8 +289,8 @@ def get_sort():
             "direction": "descending",
         }
     ]
-    response = client.databases.retrieve(
-        database_id=database_id, filter=filter, sorts=sorts, page_size=1)
+    response = client.databases.query(**
+        {database_id=database_id, filter=filter, sorts=sorts, page_size=1})
     if (len(response.get("results")) == 1):
         return response.get("results")[0].get("properties").get("Sort").get("number")
     return 0
