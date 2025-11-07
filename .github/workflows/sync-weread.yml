@@ -24,7 +24,7 @@ jobs:
         
     - name: Sync WeRead highlights to Notion
       env:
-        WEREAD_COOKIE: ${{ secrets.WEREAD_COOKIE }}
+        WEREAD_TOKEN: ${{ secrets.WEREAD_TOKEN }}
         NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
         NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
       run: |

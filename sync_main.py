@@ -10,7 +10,7 @@ class WeReadAPI:
         self._setup_session()
         
         # 从环境变量获取完整的微信读书Cookie字符串
-        self.cookie_string = os.getenv('WEREAD_COOKIE')
+        self.cookie_string = os.getenv('WEREAD_TOKEN')
         if not self.cookie_string:
             raise Exception("未设置 WEREAD_COOKIE 环境变量")
     
