@@ -489,8 +489,10 @@ if __name__ == "__main__":
     database_id = options.database_id
     notion_token = options.notion_token
     session = requests.Session()
-    session.cookies = parse_cookie_string(weread_cookie)
-    
+    # session.cookies = parse_cookie_string(weread_cookie)
+    # 修复这一行：使用 update 而不是直接赋值
+    session.cookies.update(parse_cookie_string(weread_cookie))
+        
     # 删除或注释掉有问题的Client初始化
     # client = Client(
     #     auth=notion_token,
