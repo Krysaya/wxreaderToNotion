@@ -40,7 +40,10 @@ def notion_api_request(method, endpoint, payload=None, notion_token=None):
     }
     
     url = f"https://api.notion.com/v1{endpoint}"
-    
+    # 添加调试信息
+    print(f"🔧 调试信息 - 请求URL: {url}")
+    print(f"🔧 调试信息 - 请求载荷: {json.dumps(payload, indent=2, ensure_ascii=False)}")
+
     try:
         if method.upper() == "POST":
             response = requests.post(url, headers=headers, json=payload)
