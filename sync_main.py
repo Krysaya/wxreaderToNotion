@@ -18,7 +18,8 @@ WEREAD_READ_INFO_URL = "https://weread.qq.com/book/readinfo"
 WEREAD_REVIEW_LIST_URL = "https://weread.qq.com/review/list"
 WEREAD_BOOK_INFO = "https://weread.qq.com/book/info"
 
-
+# 正确初始化客户端
+client = Client(auth=os.getenv('NOTION_TOKEN'))  # 变量名建议使用 'notion' 或 'client'，并保持前后一致
 def parse_cookie_string(cookie_string):
     cookie = SimpleCookie()
     cookie.load(cookie_string)
