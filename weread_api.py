@@ -7,6 +7,13 @@ import re
 import time
 import requests
 from urllib.parse import parse_qs
+WEREAD_URL = "https://weread.qq.com/"
+WEREAD_NOTEBOOKS_URL = "https://weread.qq.com/user/notebooks"
+WEREAD_BOOKMARKLIST_URL = "https://weread.qq.com/book/bookmarklist"
+WEREAD_CHAPTER_INFO = "https://weread.qq.com/book/chapterInfos"
+WEREAD_READ_INFO_URL = "https://weread.qq.com/book/readinfo"
+WEREAD_REVIEW_LIST_URL = "https://weread.qq.com/review/list"
+WEREAD_BOOK_INFO = "https://weread.qq.com/book/info"
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
