@@ -172,7 +172,7 @@ def check(bookId):
             "equals": bookId
         }
     }
-    response = client.databases.query(**{"database_id":database_id, "filter":filter})
+    response = client.databases.query("database_id":database_id, "filter":filter)
     for result in response["results"]:
         time.sleep(0.3)
         client.blocks.delete(block_id=result["id"])
@@ -289,8 +289,8 @@ def get_sort():
             "direction": "descending",
         }
     ]
-    response = client.databases.query(**
-        {"database_id":database_id, "filter":filter, "sorts":sorts, "page_size":1})
+    response = client.databases.query(
+        "database_id":database_id, "filter":filter, "sorts":sorts, "page_size":1)
     if (len(response.get("results")) == 1):
         return response.get("results")[0].get("properties").get("Sort").get("number")
     return 0
@@ -386,8 +386,8 @@ if __name__ == "__main__":
     session.cookies = parse_cookie_string(weread_token)
     client = Client(
         auth=notion_token,
+        notionVersion: "2025-0-28",
         log_level=logging.ERROR
-        # notion_version="2025-09-03"
 
     )
     # 调试代码：检查query方法是否存在
