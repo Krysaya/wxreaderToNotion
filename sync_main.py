@@ -19,7 +19,6 @@ WEREAD_REVIEW_LIST_URL = "https://weread.qq.com/review/list"
 WEREAD_BOOK_INFO = "https://weread.qq.com/book/info"
 
 # 正确初始化客户端
-client = Client(auth=os.getenv('NOTION_TOKEN'))  # 变量名建议使用 'notion' 或 'client'，并保持前后一致
 def parse_cookie_string(cookie_string):
     cookie = SimpleCookie()
     cookie.load(cookie_string)
@@ -389,6 +388,9 @@ if __name__ == "__main__":
         auth=notion_token,
         log_level=logging.ERROR
     )
+    # 调试代码：检查query方法是否存在
+    print(f"客户端databases对象的类型: {type(client.databases)}")
+    print(f"客户端databases对象的所有方法: {[method for method in dir(client.databases) if not method.startswith('_')]}")
     session.get(WEREAD_URL)
     latest_sort = get_sort()
     books = get_notebooklist()
