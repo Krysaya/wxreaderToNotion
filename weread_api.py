@@ -479,73 +479,63 @@ def calculate_book_str_id(book_id):
     return result
 # ========== 修改主函数调用方式 ==========
 
-def main(weread_token, notion_token, database_id):
-    """主函数 - 只修改Notion相关的调用"""
-    try:
-        # 您的原有初始化代码保持不变
-        
-        session = requests.Session()
-        session.cookies.update(parse_cookie_string(weread_token))
-        
-        # 删除或注释掉原来的client初始化
-        # from notion_client import Client
-        # client = Client(auth=notion_token, log_level=logging.ERROR)
-        
-        # 获取最新排序值 - 修改调用方式
-        latest_sort = get_sort(database_id, notion_token)
-        
-        # 获取微信读书书架 - 保持不变
-        bookshelf = get_bookmark_list(bookId)
-        if not bookshelf:
-            print("获取书架失败")
-            return
-        
-        books = bookshelf.get('books', [])
-        print(f"一共{len(books)}本，当前是第1本。")
-        
-        # 同步书籍到Notion - 修改调用方式
-        success_count = 0
-        for i, book in enumerate(books):
-            bookId = book.get('bookId')
-            if not bookId:
-                continue
-                
-            print(f"正在同步 {book['title']} ,一共{len(books)}本，当前是第{i+1}本。")
-            
-            # 检查书籍是否已存在 - 修改调用方式
-            response = check(bookId, database_id, notion_token)
-            
-            if response and response.get("results") and len(response["results"]) > 0:
-                # 书籍已存在，更新排序 - 修改调用方式
-                page_id = response["results"][0]["id"]
-                latest_sort += 1
-                if update_book_in_notion(page_id, book, latest_sort, notion_token):
-                    success_count += 1
-            else:
-                # 书籍不存在，添加新书 - 修改调用方式
-                latest_sort += 1
-                if add_book_to_notion(book, latest_sort, database_id, notion_token):
-                    success_count += 1
-            
-            time.sleep(1)  # 避免请求过于频繁
-        
-        print(f"同步完成！成功处理 {success_count} 本书籍")
-        
-    except Exception as e:
-        print(f"同步过程出现错误: {e}")
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("weread_token")
-    parser.add_argument("notion_token") 
+    parser.add_argument("weread_cookie")
+    parser.add_argument("notion_token")
     parser.add_argument("database_id")
     options = parser.parse_args()
-    weread_token = options.weread_token
+    weread_cookie = options.weread_cookie
     database_id = options.database_id
     notion_token = options.notion_token
+    session = requests.Session()
+    session.cookies = parse_cookie_string(weread_cookie)
     
-    main(weread_token, notion_token, database_id)
-
+    # 删除或注释掉有问题的Client初始化
+    # client = Client(
+    #     auth=notion_token,
+    #     log_level=logging.ERROR
+    # )
+    
+    session.get(WEREAD_URL)
+    
+    # 修改get_sort调用，传入必要的参数
+    latest_sort = get_sort(database_id, notion_token)
+    
+    books = get_notebooklist()
+    if (books != None):
+        for book in books:
+            sort = book["sort"]
+            if sort <= latest_sort:
+                continue
+            book = book.get("book")
+            title = book.get("title")
+            cover = book.get("cover")
+            bookId = book.get("bookId")
+            author = book.get("author")
+            
+            # 修改check调用，传入必要的参数
+            check_result = check(bookId, database_id, notion_token)
+            
+            chapter = get_chapter_info(bookId)
+            bookmark_list = get_bookmark_list(bookId)
+            summary, reviews = get_review_list(bookId)
+            bookmark_list.extend(reviews)
+            bookmark_list = sorted(bookmark_list, key=lambda x: (
+                x.get("chapterUid", 1), 0 if x.get("range", "") == "" else int(x.get("range").split("-")[0])))
+            isbn,rating = get_bookinfo(bookId)
+            children, grandchild = get_children(
+                chapter, summary, bookmark_list)
+            
+            # 修改insert_to_notion调用，传入notion_token
+            id = insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_id, notion_token)
+            
+            # 修改add_children调用，传入notion_token
+            results = add_children(id, children, notion_token)
+            
+            if(len(grandchild)>0 and results!=None):
+                # 修改add_grandchild调用，传入notion_token
+                add_grandchild(grandchild, results, notion_token)
 # if __name__ == "__main__":
 #     parser = argparse.ArgumentParser()
 #     parser.add_argument("weread_cookie")
