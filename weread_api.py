@@ -69,13 +69,21 @@ def query_data_source(database_id, filter_condition=None, sorts=None, page_size=
     """查询数据源 - 替换原来的client.databases.query"""
     endpoint = f"/databases/{database_id}/query"
     
-    payload = {}
+    # 正确的请求体格式
+    payload = {
+        "page_size": page_size
+    }
+    
+    # 构建query对象（如果存在filter或sorts）
+    query_params = {}
     if filter_condition:
-        payload["filter"] = filter_condition
+        query_params["filter"] = filter_condition
     if sorts:
-        payload["sorts"] = sorts
-    if page_size:
-        payload["page_size"] = page_size
+        query_params["sorts"] = sorts
+    
+    # 只有当有查询参数时才添加query字段
+    if query_params:
+        payload["query"] = query_params
     
     return notion_api_request("POST", endpoint, payload, notion_token)
 
@@ -292,6 +300,10 @@ def main(weread_token, notion_token, database_id):
         # 初始化session
         session = requests.Session()
         session.cookies.update(parse_cookie_string(weread_token))
+        # 添加这行 - 模拟真实浏览器
+        session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        })
         session.get(WEREAD_URL)
 
         # 测试Notion连接
