@@ -495,7 +495,7 @@ def main(weread_token, notion_token, database_id):
         latest_sort = get_sort(database_id, notion_token)
         
         # 获取微信读书书架 - 保持不变
-        bookshelf = get_bookshelf(session)
+        bookshelf = get_bookmark_list(bookId)
         if not bookshelf:
             print("获取书架失败")
             return
