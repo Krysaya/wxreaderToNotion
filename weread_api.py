@@ -139,91 +139,6 @@ def get_sort(database_id, notion_token):
         print(f"获取排序值时出错: {e}")
         return 0
 
-def add_book_to_notion(book, sort, database_id, notion_token):
-    """添加书籍到Notion - 修正数据结构"""
-    try:
-        print(f"📚 正在处理书籍数据: {book}")  # 调试信息
-        
-        # 修正：书籍信息直接来自book对象，没有bookInfo层级
-        if 'book' not in book:
-            print(f"❌ 书籍数据格式错误，缺少book字段: {book}")
-            return False
-            
-        book_data = book['book']
-        
-        # 安全地获取各个字段，提供默认值
-        title = book_data.get('title', '未知标题')
-        book_id = book_data.get('bookId', book.get('bookId', ''))  # 可能有两层bookId
-        author = book_data.get('author', '未知作者')
-        cover = book_data.get('cover', '')
-        
-        # 处理分类信息
-        categories = book_data.get('categories', [])
-        category = ''
-        if categories and len(categories) > 0:
-            category = categories[0].get('title', '')
-        
-        # 其他可选字段
-        isbn = book_data.get('isbn', '')
-        intro = book_data.get('intro', '')
-        publisher = book_data.get('publisher', '')
-        
-        print(f"📖 书籍信息 - 标题: {title}, 作者: {author}, 分类: {category}")
-        
-        # 构建Notion属性
-        properties = {
-            "BookName": {
-                "title": [{"text": {"content": title}}]
-            },
-            "BookId": {
-                "rich_text": [{"text": {"content": book_id}}]
-            },
-            "Sort": {
-                "number": sort
-            },
-            "Author": {
-                "rich_text": [{"text": {"content": author}}]
-            }
-        }
-        
-        # 可选字段 - 只在有值时添加
-        if cover:
-            properties["Cover"] = {
-                "files": [{"name": "cover.jpg", "external": {"url": cover}}]
-            }
-        if category:
-            properties["Category"] = {
-                "rich_text": [{"text": {"content": category}}]
-            }
-        if isbn:
-            properties["ISBN"] = {
-                "rich_text": [{"text": {"content": isbn}}]
-            }
-        if intro:
-            intro_short = intro[:2000] if len(intro) > 2000 else intro
-            properties["Intro"] = {
-                "rich_text": [{"text": {"content": intro_short}}]
-            }
-        if publisher:
-            properties["Publisher"] = {
-                "rich_text": [{"text": {"content": publisher}}]
-            }
-        
-        print(f"🔄 正在创建Notion页面...")
-        response = create_page_in_database(database_id, properties, notion_token)
-        
-        if response:
-            print(f"✅ 成功添加书籍: {title}")
-            return True
-        else:
-            print(f"❌ 添加书籍失败: {title}")
-            return False
-            
-    except Exception as e:
-        print(f"添加书籍到Notion时出错: {e}")
-        import traceback
-        print(f"详细错误: {traceback.format_exc()}")
-        return False
 
 def check(bookId, database_id, notion_token):
     """检查书籍是否已存在"""
@@ -316,6 +231,43 @@ def check(bookId, database_id, notion_token):
         print(f"详细错误: {traceback.format_exc()}")
         return False
 
+def add_book_to_notion(book, sort, database_id, notion_token):
+    """添加书籍到Notion - 添加详细错误信息"""
+    try:
+        if 'book' not in book:
+            print(f"❌ 书籍数据格式错误，缺少book字段")
+            return False
+            
+        book_data = book['book']
+        title = book_data.get('title', '未知标题')
+        book_id = book_data.get('bookId', book.get('bookId', ''))
+        author = book_data.get('author', '未知作者')
+        
+        properties = {
+            "BookName": {"title": [{"text": {"content": title}}]},
+            "BookId": {"rich_text": [{"text": {"content": book_id}}]},
+            "Sort": {"number": sort},
+            "Author": {"rich_text": [{"text": {"content": author}}]},
+        }
+        
+        # 添加封面
+        cover = book_data.get('cover', '')
+        if cover:
+            properties["Cover"] = {"files": [{"name": "cover.jpg", "external": {"url": cover}}]}
+        
+        response = create_page_in_database(database_id, properties, notion_token)
+        
+        if response:
+            print(f"✅ 成功添加书籍: {title}")
+            return True
+        else:
+            print(f"❌ 添加书籍失败: {title} - 请检查Notion数据库字段配置")
+            return False
+            
+    except Exception as e:
+        print(f"❌ 添加书籍到Notion时出错: {e}")
+        return False
+        
 def update_book_in_notion(page_id, book, sort, notion_token):
     """更新Notion中的书籍信息"""
     try:
@@ -380,75 +332,106 @@ def get_bookinfo(session, bookId):
         return None
 
 def main(weread_token, notion_token, database_id):
-    """主函数"""
+    """主函数 - 添加错误处理和提前退出"""
     try:
-        # 初始化session
+        # 初始化session和Notion API
         session = requests.Session()
         session.cookies.update(parse_cookie_string(weread_token))
-        # 添加浏览器标识
+        
+        # 设置微信读书请求头
         session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
             'Referer': 'https://weread.qq.com/',
         })
-        session.get(WEREAD_URL)
 
         # 测试Notion连接
         print("测试Notion连接...")
-        db_info = get_database_info(database_id, notion_token)
-        if not db_info:
-            print("❌ Notion连接失败，请检查token和数据库ID")
+        db_info_url = f"https://api.notion.com/v1/databases/{database_id}"
+        headers = {
+            "Authorization": f"Bearer {notion_token}",
+            "Notion-Version": "2022-06-28"
+        }
+        response = requests.get(db_info_url, headers=headers)
+        if response.status_code != 200:
+            print(f"❌ Notion连接失败: {response.status_code}")
             return
-        
         print("✅ Notion连接成功")
-        
+
         # 获取最新排序值
+        print("正在查询最新排序值...")
         latest_sort = get_sort(database_id, notion_token)
         if latest_sort is None:
-            latest_sort = 0
-        
+            print("❌ 获取排序值失败，停止同步")
+            return
+        print(f"当前最新排序值: {latest_sort}")
+
         # 获取微信读书书架
         print("获取微信读书书架...")
         bookshelf = get_bookshelf(session)
         if not bookshelf:
-            print("❌ 获取书架失败")
+            print("❌ 获取书架失败，停止同步")
             return
-        
+
         books = bookshelf.get('books', [])
-        print(f"找到 {len(books)} 本书籍")
-        
+        print(f"找到 {len(books)} 本书籍需要同步")
+
         # 同步书籍到Notion
         success_count = 0
+        error_count = 0
+        max_errors = 3  # 最大错误次数，超过则停止
+        
         for i, book in enumerate(books):
-            bookId = book.get('bookId')
-            if not bookId:
+            book_id = book.get('bookId')
+            if not book_id:
                 continue
                 
-            print(f"\n正在同步第 {i+1}/{len(books)} 本书: {book.get('title', '未知标题')}")
+            title = book.get('title', '未知标题')
+            print(f"\n正在处理 [{i+1}/{len(books)}]: {title}")
             
             # 检查书籍是否已存在
-            existing_page_id = check(bookId, database_id, notion_token)
+            existing_page = check(book_id, database_id, notion_token)
             
-            if existing_page_id:
-                # 更新现有书籍
-                latest_sort += 1
-                if update_book_in_notion(existing_page_id, book, latest_sort, notion_token):
-                    success_count += 1
-            else:
-                # 添加新书籍
-                latest_sort += 1
-                if add_book_to_notion(book, latest_sort, database_id, notion_token):
-                    success_count += 1
+            try:
+                if existing_page and existing_page.get("results"):
+                    # 更新现有书籍
+                    latest_sort += 1
+                    page_id = existing_page["results"][0]["id"]
+                    if update_book_in_notion(page_id, book, latest_sort, notion_token):
+                        success_count += 1
+                    else:
+                        error_count += 1
+                        print(f"❌ 更新书籍失败: {title}")
+                else:
+                    # 添加新书籍
+                    latest_sort += 1
+                    if add_book_to_notion(book, latest_sort, database_id, notion_token):
+                        success_count += 1
+                    else:
+                        error_count += 1
+                        print(f"❌ 添加书籍失败: {title}")
+                
+                # 如果错误次数超过阈值，停止同步
+                if error_count >= max_errors:
+                    print(f"❌ 错误次数超过 {max_errors} 次，停止同步")
+                    break
+                    
+            except Exception as e:
+                error_count += 1
+                print(f"❌ 处理书籍时发生异常: {title} - {e}")
+                if error_count >= max_errors:
+                    print(f"❌ 错误次数超过 {max_errors} 次，停止同步")
+                    break
             
             # 避免请求过于频繁
-            time.sleep(0.5)
+            time.sleep(1)
         
-        print(f"\n🎉 同步完成！成功处理 {success_count}/{len(books)} 本书籍")
+        print(f"\n🎉 同步完成！成功: {success_count}, 失败: {error_count}, 总计: {len(books)}")
         
     except Exception as e:
-        print(f"同步过程出现错误: {e}")
-        logging.exception("详细错误信息:")
+        print(f"❌ 同步过程出现严重错误: {e}")
+        return
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='同步微信读书到Notion')
