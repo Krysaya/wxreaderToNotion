@@ -67,7 +67,7 @@ def notion_api_request(method, endpoint, payload=None, notion_token=None):
         print(f"API请求异常: {e}")
         return None
 
-def query_database(database_id, filter_condition=None, sorts=None, page_size=1, notion_token=None):
+def query_data_source(database_id, filter_condition=None, sorts=None, page_size=1, notion_token=None):
     # 查询数据库 - 
     endpoint = f"/databases/{database_id}/query"
     
