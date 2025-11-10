@@ -28,11 +28,8 @@ def parse_cookie_string(cookie_string):
     return cookie_dict
 
 # 通用的Notion API请求函数
-def notion_api_request(method, endpoint, payload=None, notion_token=None):
-    """通用的Notion API请求函数"""
-    if notion_token is None:
-        notion_token = os.getenv('NOTION_TOKEN')
-    
+def notion_api_request(method, endpoint, payload=None, notion_token=None, timeout=30):
+    """通用的Notion API请求函数 - 强制显示错误详情"""
     headers = {
         "Authorization": f"Bearer {notion_token}",
         "Notion-Version": "2022-06-28",
@@ -40,31 +37,32 @@ def notion_api_request(method, endpoint, payload=None, notion_token=None):
     }
     
     url = f"https://api.notion.com/v1{endpoint}"
-    # 添加调试信息
-    print(f"🔧 调试信息 - 请求URL: {url}")
-    print(f"🔧 调试信息 - 请求载荷: {json.dumps(payload, indent=2, ensure_ascii=False)}")
-
+    
     try:
         if method.upper() == "POST":
-            response = requests.post(url, headers=headers, json=payload)
+            response = requests.post(url, headers=headers, json=payload, timeout=timeout)
         elif method.upper() == "GET":
-            response = requests.get(url, headers=headers)
+            response = requests.get(url, headers=headers, timeout=timeout)
         elif method.upper() == "PATCH":
-            response = requests.patch(url, headers=headers, json=payload)
+            response = requests.patch(url, headers=headers, json=payload, timeout=timeout)
         else:
             raise ValueError(f"不支持的HTTP方法: {method}")
         
         if response.status_code == 200:
             return response.json()
         else:
-            print(f"Notion API调用失败: {response.status_code}")
-            print(f"URL: {url}")
-            if response.status_code == 404:
-                print("错误: 未找到数据库，请检查数据库ID和集成权限")
+            # 🔴 关键：显示完整的错误响应
+            print(f"🔴 Notion API调用失败: {response.status_code}")
+            print(f"🔴 URL: {url}")
+            print(f"🔴 请求头: {headers}")
+            print(f"🔴 请求载荷: {json.dumps(payload, indent=2, ensure_ascii=False)}")
+            print("🔴 完整错误响应:")
+            print(response.text)  # 这行最重要！
+            print("🔴" + "="*50)
             return None
             
     except Exception as e:
-        print(f"API请求异常: {e}")
+        print(f"🔴 API请求异常: {e}")
         return None
 
 def query_data_source(database_id, filter_condition=None, sorts=None, page_size=1, notion_token=None):
@@ -352,6 +350,37 @@ def check_database_structure(database_id, notion_token):
     else:
         print(f"❌ 无法获取数据库结构: {response.status_code} - {response.text}")
         return None
+def test_minimal_page_creation(database_id, notion_token):
+    """创建最小化的测试页面，排除字段问题"""
+    print("🧪 创建最小化测试页面...")
+    
+    # 最简单的页面创建请求
+    minimal_payload = {
+        "parent": {"database_id": database_id},
+        "properties": {
+            "BookName": {
+                "title": [
+                    {
+                        "text": {"content": "测试书籍"}
+                    }
+                ]
+            }
+        }
+    }
+    
+    # 测试1: 只有标题
+    print("测试1: 只有标题字段")
+    result1 = notion_api_request("POST", "/pages", minimal_payload, notion_token)
+    
+    if result1:
+        print("✅ 测试1成功 - 问题在其他字段")
+        # 删除测试页面
+        page_id = result1["id"]
+        notion_api_request("DELETE", f"/pages/{page_id}", notion_token=notion_token)
+        return True
+    else:
+        print("❌ 测试1失败 - 基本配置有问题")
+        return False
 
 def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
@@ -372,7 +401,12 @@ def main(weread_token, notion_token, database_id):
         if not db_properties:
             print("❌ 数据库结构检查失败，停止同步")
             return
-
+        # 2. 运行最小化测试
+        print("🧪 运行最小化测试...")
+        if not test_minimal_page_creation(database_id, notion_token):
+            print("❌ 最小化测试失败，停止同步")
+            return
+            
         # 2. 测试Notion连接
         print("测试Notion连接...")
         db_info_url = f"https://api.notion.com/v1/databases/{database_id}"
