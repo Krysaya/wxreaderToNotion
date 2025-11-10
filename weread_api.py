@@ -139,6 +139,92 @@ def get_sort(database_id, notion_token):
         print(f"获取排序值时出错: {e}")
         return 0
 
+def add_book_to_notion(book, sort, database_id, notion_token):
+    """添加书籍到Notion - 修正数据结构"""
+    try:
+        print(f"📚 正在处理书籍数据: {book}")  # 调试信息
+        
+        # 修正：书籍信息直接来自book对象，没有bookInfo层级
+        if 'book' not in book:
+            print(f"❌ 书籍数据格式错误，缺少book字段: {book}")
+            return False
+            
+        book_data = book['book']
+        
+        # 安全地获取各个字段，提供默认值
+        title = book_data.get('title', '未知标题')
+        book_id = book_data.get('bookId', book.get('bookId', ''))  # 可能有两层bookId
+        author = book_data.get('author', '未知作者')
+        cover = book_data.get('cover', '')
+        
+        # 处理分类信息
+        categories = book_data.get('categories', [])
+        category = ''
+        if categories and len(categories) > 0:
+            category = categories[0].get('title', '')
+        
+        # 其他可选字段
+        isbn = book_data.get('isbn', '')
+        intro = book_data.get('intro', '')
+        publisher = book_data.get('publisher', '')
+        
+        print(f"📖 书籍信息 - 标题: {title}, 作者: {author}, 分类: {category}")
+        
+        # 构建Notion属性
+        properties = {
+            "BookName": {
+                "title": [{"text": {"content": title}}]
+            },
+            "BookId": {
+                "rich_text": [{"text": {"content": book_id}}]
+            },
+            "Sort": {
+                "number": sort
+            },
+            "Author": {
+                "rich_text": [{"text": {"content": author}}]
+            }
+        }
+        
+        # 可选字段 - 只在有值时添加
+        if cover:
+            properties["Cover"] = {
+                "files": [{"name": "cover.jpg", "external": {"url": cover}}]
+            }
+        if category:
+            properties["Category"] = {
+                "rich_text": [{"text": {"content": category}}]
+            }
+        if isbn:
+            properties["ISBN"] = {
+                "rich_text": [{"text": {"content": isbn}}]
+            }
+        if intro:
+            intro_short = intro[:2000] if len(intro) > 2000 else intro
+            properties["Intro"] = {
+                "rich_text": [{"text": {"content": intro_short}}]
+            }
+        if publisher:
+            properties["Publisher"] = {
+                "rich_text": [{"text": {"content": publisher}}]
+            }
+        
+        print(f"🔄 正在创建Notion页面...")
+        response = create_page_in_database(database_id, properties, notion_token)
+        
+        if response:
+            print(f"✅ 成功添加书籍: {title}")
+            return True
+        else:
+            print(f"❌ 添加书籍失败: {title}")
+            return False
+            
+    except Exception as e:
+        print(f"添加书籍到Notion时出错: {e}")
+        import traceback
+        print(f"详细错误: {traceback.format_exc()}")
+        return False
+
 def check(bookId, database_id, notion_token):
     """检查书籍是否已存在"""
     try:
@@ -173,7 +259,7 @@ def check(bookId, database_id, notion_token):
         print(f"检查书籍时出错: {e}")
         return None
 
-def add_book_to_notion(book, sort, database_id, notion_token):
+
     """添加书籍到Notion - 添加数据安全检查"""
     try:
         # 添加数据安全检查
@@ -229,13 +315,14 @@ def add_book_to_notion(book, sort, database_id, notion_token):
         import traceback
         print(f"详细错误: {traceback.format_exc()}")
         return False
+
 def update_book_in_notion(page_id, book, sort, notion_token):
     """更新Notion中的书籍信息"""
     try:
         # 安全地获取标题
         title = "未知标题"
-        if 'book' in book and 'bookInfo' in book['book']:
-            title = book['book']['bookInfo'].get('title', '未知标题')
+        if 'book' in book:
+            title = book['book'].get('title', '未知标题')
         
         properties = {
             "Sort": {"number": sort}
