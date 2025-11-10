@@ -106,37 +106,37 @@ def get_database_info(database_id, notion_token=None):
     return notion_api_request("GET", endpoint, notion_token=notion_token)
 
 def get_sort(database_id, notion_token):
-    """获取最新的排序值"""
+    """获取最新的排序值 - 修正获取逻辑"""
     try:
-        print("正在查询最新排序值...")
-        
-        response = query_data_source(
+        response = query_database(
             database_id=database_id,
             sorts=[{"property": "Sort", "direction": "descending"}],
             page_size=1,
             notion_token=notion_token
         )
         
+        print(f"🔍 排序查询响应: {response}")  # 调试信息
+        
         if response and response.get("results") and len(response["results"]) > 0:
             latest_page = response["results"][0]
             sort_property = latest_page.get("properties", {}).get("Sort", {})
+            print(f"🔍 Sort属性详情: {sort_property}")  # 调试信息
             
-            # 获取排序值
+            # 根据数据库：Sort 是 number 类型
             if sort_property.get("type") == "number":
-                sort_value = sort_property.get("number", 0)
-                print(f"找到最新排序值: {sort_value}")
-                return sort_value
+                sort_value = sort_property.get("number")
+                print(f"✅ 找到最新排序值: {sort_value}")
+                return sort_value if sort_value is not None else 0
             else:
-                print("Sort属性不是数字类型，使用默认值0")
+                print(f"⚠️ Sort属性类型不是number: {sort_property.get('type')}")
                 return 0
         else:
-            print("未找到任何记录，使用默认排序值0")
+            print("ℹ️ 未找到任何记录，使用默认排序值0")
             return 0
-            
+        
     except Exception as e:
-        print(f"获取排序值时出错: {e}")
+        print(f"❌ 获取排序值时出错: {e}")
         return 0
-
 
 def check(bookId, database_id, notion_token):
     """检查书籍是否已存在"""
@@ -230,7 +230,7 @@ def check(bookId, database_id, notion_token):
         return False
 
 def add_book_to_notion(book, sort, database_id, notion_token):
-    """添加书籍到Notion - 添加详细错误信息"""
+    """添加书籍到Notion - 根据实际数据库结构"""
     try:
         if 'book' not in book:
             print(f"❌ 书籍数据格式错误，缺少book字段")
@@ -240,32 +240,46 @@ def add_book_to_notion(book, sort, database_id, notion_token):
         title = book_data.get('title', '未知标题')
         book_id = book_data.get('bookId', book.get('bookId', ''))
         author = book_data.get('author', '未知作者')
+        cover = book_data.get('cover', '')
         
+        # 根据实际数据库结构配置字段类型
         properties = {
-            "BookName": {"title": [{"text": {"content": title}}]},
-            "BookId": {"rich_text": [{"text": {"content": book_id}}]},
-            "Sort": {"number": sort},
-            "Author": {"rich_text": [{"text": {"content": author}}]},
+            "BookName": {
+                "title": [{"text": {"content": title}}]
+            },
+            "BookId": {
+                "rich_text": [{"text": {"content": book_id}}]
+            },
+            # 根据数据库：Sort 是 number 类型
+            "Sort": {
+                "number": sort
+            },
+            "Author": {
+                "rich_text": [{"text": {"content": author}}]
+            },
+            # 根据数据库：Cover 是 files 类型
+            "Cover": {
+                "files": [{"name": "cover.jpg", "external": {"url": cover}}]
+            },
+            # 设置默认状态
+            "Status": {
+                "status": {"name": "未开始"}  # 或者其他可选状态
+            }
         }
         
-        # 添加封面
-        cover = book_data.get('cover', '')
-        if cover:
-            properties["Cover"] = {"files": [{"name": "cover.jpg", "external": {"url": cover}}]}
-        
+        print(f"🔄 创建页面属性...")
         response = create_page_in_database(database_id, properties, notion_token)
         
         if response:
             print(f"✅ 成功添加书籍: {title}")
             return True
         else:
-            print(f"❌ 添加书籍失败: {title} - 请检查Notion数据库字段配置")
+            print(f"❌ 添加书籍失败: {title}")
             return False
             
     except Exception as e:
         print(f"❌ 添加书籍到Notion时出错: {e}")
         return False
-
 def update_book_in_notion(page_id, book, sort, notion_token):
     """更新Notion中的书籍信息"""
     try:
@@ -350,7 +364,6 @@ def check_database_structure(database_id, notion_token):
     else:
         print(f"❌ 无法获取数据库结构: {response.status_code} - {response.text}")
         return None
-def test_minimal_page_creation(database_id, notion_token):
     """创建最小化的测试页面，排除字段问题"""
     print("🧪 创建最小化测试页面...")
     
@@ -401,12 +414,7 @@ def main(weread_token, notion_token, database_id):
         if not db_properties:
             print("❌ 数据库结构检查失败，停止同步")
             return
-        # 2. 运行最小化测试
-        print("🧪 运行最小化测试...")
-        if not test_minimal_page_creation(database_id, notion_token):
-            print("❌ 最小化测试失败，停止同步")
-            return
-            
+       
         # 2. 测试Notion连接
         print("测试Notion连接...")
         db_info_url = f"https://api.notion.com/v1/databases/{database_id}"
