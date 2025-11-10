@@ -174,9 +174,16 @@ def check(bookId, database_id, notion_token):
         return None
 
 def add_book_to_notion(book, sort, database_id, notion_token):
-    """添加书籍到Notion"""
+    """添加书籍到Notion - 添加数据安全检查"""
     try:
+        # 添加数据安全检查
+        if 'book' not in book or 'bookInfo' not in book['book']:
+            print(f"❌ 书籍数据格式错误: {book}")
+            return False
+            
         book_info = book['book']['bookInfo']
+        
+        # 安全地获取各个字段，提供默认值
         title = book_info.get('title', '未知标题')
         book_id = book_info.get('bookId', '')
         author = book_info.get('author', '未知作者')
@@ -187,41 +194,25 @@ def add_book_to_notion(book, sort, database_id, notion_token):
         publisher = book_info.get('publisher', '')
         
         properties = {
-            "BookName": {
-                "title": [{"text": {"content": title}}]
-            },
-            "BookId": {
-                "rich_text": [{"text": {"content": book_id}}]
-            },
-            "Sort": {
-                "number": sort
-            },
-            "Author": {
-                "rich_text": [{"text": {"content": author}}]
-            }
+            "BookName": {"title": [{"text": {"content": title}}]},
+            "BookId": {"rich_text": [{"text": {"content": book_id}}]},
+            "Sort": {"number": sort},
+            "Author": {"rich_text": [{"text": {"content": author}}]},
         }
         
-        # 可选字段
+        # 可选字段 - 只在有值时添加
         if cover:
-            properties["Cover"] = {
-                "files": [{"name": "cover.jpg", "external": {"url": cover}}]
-            }
+            properties["Cover"] = {"files": [{"name": "cover.jpg", "external": {"url": cover}}]}
         if category:
-            properties["Category"] = {
-                "rich_text": [{"text": {"content": category}}]
-            }
+            properties["Category"] = {"rich_text": [{"text": {"content": category}}]}
         if isbn:
-            properties["ISBN"] = {
-                "rich_text": [{"text": {"content": isbn}}]
-            }
+            properties["ISBN"] = {"rich_text": [{"text": {"content": isbn}}]}
         if intro:
-            properties["Intro"] = {
-                "rich_text": [{"text": {"content": intro}}]
-            }
+            # 如果简介太长，可以截断
+            intro_short = intro[:2000] if len(intro) > 2000 else intro
+            properties["Intro"] = {"rich_text": [{"text": {"content": intro_short}}]}
         if publisher:
-            properties["Publisher"] = {
-                "rich_text": [{"text": {"content": publisher}}]
-            }
+            properties["Publisher"] = {"rich_text": [{"text": {"content": publisher}}]}
         
         response = create_page_in_database(database_id, properties, notion_token)
         
@@ -234,11 +225,18 @@ def add_book_to_notion(book, sort, database_id, notion_token):
             
     except Exception as e:
         print(f"添加书籍到Notion时出错: {e}")
+        # 打印详细的错误信息以便调试
+        import traceback
+        print(f"详细错误: {traceback.format_exc()}")
         return False
-
 def update_book_in_notion(page_id, book, sort, notion_token):
     """更新Notion中的书籍信息"""
     try:
+        # 安全地获取标题
+        title = "未知标题"
+        if 'book' in book and 'bookInfo' in book['book']:
+            title = book['book']['bookInfo'].get('title', '未知标题')
+        
         properties = {
             "Sort": {"number": sort}
         }
@@ -246,17 +244,15 @@ def update_book_in_notion(page_id, book, sort, notion_token):
         response = update_page(page_id, properties, notion_token)
         
         if response:
-            title = book['book']['bookInfo'].get('title', '未知标题')
             print(f"✅ 成功更新书籍排序: {title}")
             return True
         else:
-            print(f"❌ 更新书籍失败")
+            print(f"❌ 更新书籍失败: {title}")
             return False
             
     except Exception as e:
         print(f"更新书籍时出错: {e}")
         return False
-
 def get_bookshelf(session):
     """获取微信读书书架 - 使用完整的请求头"""
     try:
