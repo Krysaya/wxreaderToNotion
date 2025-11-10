@@ -301,7 +301,7 @@ def main(weread_token, notion_token, database_id):
     try:
         # 初始化session
         session = requests.Session()
-        session.cookies.update(parse_cookie_string(weread_cookie))
+        session.cookies.update(parse_cookie_string(weread_token))
         # 添加浏览器标识
         session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
