@@ -267,7 +267,7 @@ def add_book_to_notion(book, sort, database_id, notion_token):
     except Exception as e:
         print(f"❌ 添加书籍到Notion时出错: {e}")
         return False
-        
+
 def update_book_in_notion(page_id, book, sort, notion_token):
     """更新Notion中的书籍信息"""
     try:
@@ -331,6 +331,28 @@ def get_bookinfo(session, bookId):
         print(f"获取书籍详情时出错: {e}")
         return None
 
+def check_database_structure(database_id, notion_token):
+    """检查数据库结构，确认字段配置"""
+    print("🔍 检查数据库结构...")
+    url = f"https://api.notion.com/v1/databases/{database_id}"
+    headers = {
+        "Authorization": f"Bearer {notion_token}",
+        "Notion-Version": "2022-06-28"
+    }
+    
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        db_info = response.json()
+        properties = db_info.get('properties', {})
+        print("✅ 数据库字段列表:")
+        for prop_name, prop_config in properties.items():
+            prop_type = prop_config.get('type', 'unknown')
+            print(f"   - {prop_name} ({prop_type})")
+        return properties
+    else:
+        print(f"❌ 无法获取数据库结构: {response.status_code} - {response.text}")
+        return None
+
 def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
     try:
@@ -345,8 +367,13 @@ def main(weread_token, notion_token, database_id):
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
             'Referer': 'https://weread.qq.com/',
         })
+        # 1. 先检查数据库结构
+        db_properties = check_database_structure(database_id, notion_token)
+        if not db_properties:
+            print("❌ 数据库结构检查失败，停止同步")
+            return
 
-        # 测试Notion连接
+        # 2. 测试Notion连接
         print("测试Notion连接...")
         db_info_url = f"https://api.notion.com/v1/databases/{database_id}"
         headers = {
