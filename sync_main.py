@@ -12,11 +12,11 @@ import hashlib
 
 WEREAD_URL = "https://weread.qq.com/"
 WEREAD_NOTEBOOKS_URL = "https://weread.qq.com/user/notebooks"
-WEREAD_BOOKMARKLIST_URL = "https://weread.qq.com/book/bookmarklist"
-WEREAD_CHAPTER_INFO = "https://weread.qq.com/book/chapterInfos"
+WEREAD_BOOKMARKLIST_URL = "https://weread.qq.com/web/book/bookmarklist"
+WEREAD_CHAPTER_INFO = "https://weread.qq.com/web/book/chapterInfos"
 WEREAD_READ_INFO_URL = "https://weread.qq.com/book/readinfo"
-WEREAD_REVIEW_LIST_URL = "https://weread.qq.com/review/list"
-WEREAD_BOOK_INFO = "https://weread.qq.com/book/info"
+WEREAD_REVIEW_LIST_URL = "https://weread.qq.com/web/review/list"
+WEREAD_BOOK_INFO = "https://weread.qq.com/api/book/info"
 
 # 正确初始化客户端
 def parse_cookie_string(cookie_string):

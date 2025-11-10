@@ -8,12 +8,12 @@ import time
 import requests
 from urllib.parse import parse_qs
 WEREAD_URL = "https://weread.qq.com/"
-WEREAD_NOTEBOOKS_URL = "https://weread.qq.com/user/notebooks"
-WEREAD_BOOKMARKLIST_URL = "https://weread.qq.com/book/bookmarklist"
-WEREAD_CHAPTER_INFO = "https://weread.qq.com/book/chapterInfos"
+WEREAD_NOTEBOOKS_URL = "https://weread.qq.com/api/user/notebook"
+WEREAD_BOOKMARKLIST_URL = "https://weread.qq.com/web/book/bookmarklist"
+WEREAD_CHAPTER_INFO = "https://weread.qq.com/web/book/chapterInfos"
 WEREAD_READ_INFO_URL = "https://weread.qq.com/book/readinfo"
-WEREAD_REVIEW_LIST_URL = "https://weread.qq.com/review/list"
-WEREAD_BOOK_INFO = "https://weread.qq.com/book/info"
+WEREAD_REVIEW_LIST_URL = "https://weread.qq.com/web/review/list"
+WEREAD_BOOK_INFO = "https://weread.qq.com/api/book/info"
 
 # 配置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -35,7 +35,7 @@ def notion_api_request(method, endpoint, payload=None, notion_token=None):
     
     headers = {
         "Authorization": f"Bearer {notion_token}",
-        "Notion-Version": "2025-09-03",
+        "Notion-Version": "2022-06-28",
         "Content-Type": "application/json"
     }
     
@@ -67,29 +67,21 @@ def notion_api_request(method, endpoint, payload=None, notion_token=None):
         print(f"API请求异常: {e}")
         return None
 
-# 查询数据源
-def query_data_source(database_id, filter_condition=None, sorts=None, page_size=1, notion_token=None):
-    """查询数据源 - 替换原来的client.databases.query"""
+def query_database(database_id, filter_condition=None, sorts=None, page_size=1, notion_token=None):
+    # 查询数据库 - 
     endpoint = f"/databases/{database_id}/query"
     
-    # 正确的请求体格式
+    # 正确的请求体格式：filter和sorts直接放在顶层
     payload = {
         "page_size": page_size
     }
     
-    # 构建query对象（如果存在filter或sorts）
-    query_params = {}
     if filter_condition:
-        query_params["filter"] = filter_condition
+        payload["filter"] = filter_condition  # 直接放在顶层
     if sorts:
-        query_params["sorts"] = sorts
-    
-    # 只有当有查询参数时才添加query字段
-    if query_params:
-        payload["query"] = query_params
+        payload["sorts"] = sorts              # 直接放在顶层
     
     return notion_api_request("POST", endpoint, payload, notion_token)
-
 # 在数据库中创建新页面
 def create_page_in_database(database_id, properties, notion_token=None):
     """在数据库中创建新页面"""
@@ -266,18 +258,25 @@ def update_book_in_notion(page_id, book, sort, notion_token):
         return False
 
 def get_bookshelf(session):
-    """获取微信读书书架"""
+    """获取微信读书书架 - 使用完整的请求头"""
     try:
-        url = "https://i.weread.qq.com/user/notebooks"
-        r = session.get(url)
-        if r.ok:
-            data = r.json()
-            books = data.get("books")
-            books.sort(key=lambda x: x["sort"])
-            return books
+        url = WEREAD_NOTEBOOKS_URL
+        
+        # 使用参考项目的完整请求头
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
+            'Referer': 'https://weread.qq.com/',
+            'Origin': 'https://weread.qq.com'
+        }
+        
+        response = session.get(WEREAD_NOTEBOOKS_URL, headers=headers)
+        if response.status_code == 200:
+            return response.json()
         else:
-            print(r.text)
-        return None
+            print(f"获取书架失败: {response.status_code} - {response.text}")
+            return None
     except Exception as e:
         print(f"获取书架时出错: {e}")
         return None
@@ -285,7 +284,7 @@ def get_bookshelf(session):
 def get_bookinfo(session, bookId):
     """获取书籍详情"""
     try:
-        url = f"https://i.weread.qq.com/book/info?bookId={bookId}"
+        url = f"https://i.weread.qq.com/api/book/info?bookId={bookId}"
         r = session.get(url)
         isbn = ""
         if r.ok:
@@ -302,10 +301,13 @@ def main(weread_token, notion_token, database_id):
     try:
         # 初始化session
         session = requests.Session()
-        session.cookies.update(parse_cookie_string(weread_token))
-        # 添加这行 - 模拟真实浏览器
+        session.cookies.update(parse_cookie_string(weread_cookie))
+        # 添加浏览器标识
         session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Referer': 'https://weread.qq.com/',
         })
         session.get(WEREAD_URL)
 
