@@ -396,6 +396,8 @@ def get_bookinfo(bookId, session):
     response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
         data = response.json()
+        print(f"🔍 调试 - 响应数据: {data}")
+
         isbn = data.get('isbn', '')
         rating = data.get('newRating', 0) or data.get('rating', 0)
         print(f"✅ 获取书籍信息成功: ISBN={isbn}, 评分={rating}")
@@ -405,6 +407,15 @@ def get_bookinfo(bookId, session):
         return '', 0
 
 def get_chapter_info(bookId, session):
+    
+    """获取章节信息 - 添加类型检查"""
+    print(f"🔍 调试 - session类型: {type(session)}")
+    print(f"🔍 调试 - session是否有post方法: {hasattr(session, 'post')}")
+    
+    if not hasattr(session, 'post'):
+        print(f"❌ 错误: session参数不是有效的Session对象")
+        return None
+        
     """获取章节信息 - 使用正确的API端点"""
     url = f"https://i.weread.qq.com/book/chapterInfos"
     params = {
