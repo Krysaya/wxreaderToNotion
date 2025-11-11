@@ -304,6 +304,7 @@ def update_book_in_notion(page_id, book, sort, notion_token):
     except Exception as e:
         print(f"更新书籍时出错: {e}")
         return False
+
 def get_bookshelf(session):
     """获取微信读书书架 - 使用完整的请求头"""
     try:
@@ -342,6 +343,145 @@ def get_bookinfo(session, bookId):
     except Exception as e:
         print(f"获取书籍详情时出错: {e}")
         return None
+
+def get_notebooklist():
+    """获取笔记本列表"""
+    url = WEREAD_NOTEBOOKS_URL
+    response = session.get(url)
+    if response.status_code == 200:
+        return response.json()
+    print(f"❌ 获取笔记本列表失败: {response.status_code}")
+
+    return None
+
+def get_bookmark_list(bookId):
+    """获取划线列表"""
+    url = f"https://i.weread.qq.com/book/bookmarklist?bookId={bookId}"
+    response = session.get(url)
+    if response.status_code == 200:
+        return response.json().get('updated', [])
+    return []
+
+def get_review_list(bookId):
+    """获取笔记列表"""
+    url = f"https://i.weread.qq.com/web/review/list?bookId={bookId}&listType=11&mine=1&synckey=0&listMode=0"
+    response = session.get(url)
+    if response.status_code == 200:
+        data = response.json()
+        reviews = data.get('reviews', [])
+        # 分离总结和笔记
+        summary = [r for r in reviews if r.get('review', {}).get('type') == 4]
+        reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
+        return summary, reviews
+    return [], []
+
+def get_chapter_info(bookId):
+    """获取章节信息"""
+    url = f"WEREAD_CHAPTER_INFO={bookId}"
+    response = session.get(url)
+    if response.status_code == 200:
+        return response.json()
+    return None
+def get_children(chapter, summary, bookmark_list):
+    """构建子内容"""
+    children = []
+    grandchild = {}
+    
+    # 处理目录
+    if chapter and 'chapters' in chapter:
+        for chap in chapter['chapters']:
+            if chap['level'] == 1:
+                # 一级标题
+                children.append({
+                    "object": "block",
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": [{"type": "text", "text": {"content": chap['title']}}]
+                    }
+                })
+            elif chap['level'] == 2:
+                # 二级标题
+                children.append({
+                    "object": "block", 
+                    "type": "heading_3",
+                    "heading_3": {
+                        "rich_text": [{"type": "text", "text": {"content": chap['title']}}]
+                    }
+                })
+    
+    # 处理总结
+    if summary:
+        children.append({
+            "object": "block",
+            "type": "heading_2", 
+            "heading_2": {
+                "rich_text": [{"type": "text", "text": {"content": "总结"}}]
+            }
+        })
+        for s in summary:
+            children.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{"type": "text", "text": {"content": s['review']['content']}}]
+                }
+            })
+    
+    # 处理笔记和划线
+    current_chapter = ""
+    for mark in bookmark_list:
+        # 处理章节标题
+        mark_chapter = mark.get('chapterName', '')
+        if mark_chapter and mark_chapter != current_chapter:
+            children.append({
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [{"type": "text", "text": {"content": mark_chapter}}]
+                }
+            })
+            current_chapter = mark_chapter
+        
+        # 处理划线内容
+        content = mark.get('markText', mark.get('content', ''))
+        if content:
+            children.append({
+                "object": "block",
+                "type": "paragraph", 
+                "paragraph": {
+                    "rich_text": [{"type": "text", "text": {"content": content}}]
+                }
+            })
+    
+    return children, grandchild
+
+def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_id, notion_token):
+    """插入书籍到Notion"""
+    properties = {
+        "BookName": {"title": [{"text": {"content": title}}]},
+        "BookId": {"rich_text": [{"text": {"content": bookId}}]},
+        "Sort": {"number": sort},
+        "Author": {"rich_text": [{"text": {"content": author}}]},
+        "Cover": {"files": [{"name": "cover.jpg", "external": {"url": cover}}]},
+    }
+    
+    if isbn:
+        properties["ISBN"] = {"rich_text": [{"text": {"content": isbn}}]}
+    
+    return create_page_in_database(database_id, properties, notion_token)
+
+def add_children(id, children, notion_token):
+    """添加子内容到Notion页面"""
+    if not children:
+        return None
+        
+    endpoint = f"/blocks/{id}/children"
+    payload = {"children": children}
+    
+    response = notion_api_request("PATCH", endpoint, payload, notion_token)
+    return response
+
+
 
 def check_database_structure(database_id, notion_token):
     """检查数据库结构，确认字段配置"""
@@ -446,57 +586,123 @@ def main(weread_token, notion_token, database_id):
         books = bookshelf.get('books', [])
         print(f"找到 {len(books)} 本书籍需要同步")
 
-        # 同步书籍到Notion
+        # 5. 同步书籍到Notion - 整合完整功能
         success_count = 0
         error_count = 0
-        max_errors = 3  # 最大错误次数，超过则停止
+        max_errors = 3  # 最大错误次数
         
         for i, book in enumerate(books):
+            # 原有的书籍基本信息处理
             book_id = book.get('bookId')
             if not book_id:
+                print("❌ 书籍ID缺失,跳过")
+                error_count += 1
+                if error_count >= max_errors:
+                    print("❌ 错误次数超过限制，停止同步")
+                    break
                 continue
                 
             title = book.get('title', '未知标题')
             print(f"\n正在处理 [{i+1}/{len(books)}]: {title}")
             
             # 检查书籍是否已存在
-            existing_page = check(book_id, database_id, notion_token)
+            existing_page_id = check(book_id, database_id, notion_token)
             
             try:
-                if existing_page and existing_page.get("results"):
-                    # 更新现有书籍
+                if existing_page_id:
+                    # 更新现有书籍 - 保留原有逻辑
                     latest_sort += 1
-                    page_id = existing_page["results"][0]["id"]
-                    if update_book_in_notion(page_id, book, latest_sort, notion_token):
+                    if update_book_in_notion(existing_page_id, book, latest_sort, notion_token):
                         success_count += 1
+                        print(f"✅ 成功更新书籍: {title}")
                     else:
                         error_count += 1
                         print(f"❌ 更新书籍失败: {title}")
                 else:
-                    # 添加新书籍
+                    # 新增完整功能：获取详细数据并创建完整页面
                     latest_sort += 1
-                    if add_book_to_notion(book, latest_sort, database_id, notion_token):
-                        success_count += 1
-                    else:
+                    
+                    # 获取章节信息
+                    print(f"📖 获取章节信息...")
+                    chapter = get_chapter_info(book_id)
+                    if chapter is None:
+                        print(f"❌ 获取章节信息失败: {title}")
                         error_count += 1
-                        print(f"❌ 添加书籍失败: {title}")
+                        if error_count >= max_errors:
+                            print("❌ 错误次数超过限制，停止同步")
+                            break
+                        continue
+                    
+                    # 获取划线列表
+                    print(f"📝 获取划线列表...")
+                    bookmark_list = get_bookmark_list(book_id)
+                    if bookmark_list is None:
+                        print(f"❌ 获取划线列表失败: {title}")
+                        error_count += 1
+                        if error_count >= max_errors:
+                            print("❌ 错误次数超过限制，停止同步")
+                            break
+                        continue
+                    
+                    # 获取笔记和评论
+                    print(f"💭 获取笔记和评论...")
+                    summary, reviews = get_review_list(book_id)
+                    bookmark_list.extend(reviews)
+                    
+                    # 排序内容
+                    bookmark_list = sorted(bookmark_list, key=lambda x: (
+                        x.get("chapterUid", 1), 
+                        0 if x.get("range", "") == "" else int(x.get("range").split("-")[0])
+                    ))
+                    
+                    # 获取书籍详细信息
+                    isbn, rating = get_bookinfo(book_id)
+                    
+                    # 构建内容结构
+                    children, grandchild = get_children(chapter, summary, bookmark_list)
+                    
+                    # 创建Notion页面 - 使用原有的add_book_to_notion函数
+                    print(f"🔄 创建Notion页面...")
+                    page_id = insert_to_notion(title, book_id, book.get('cover', ''), latest_sort, 
+                                            book.get('author', ''), isbn, rating, database_id, notion_token)
+                    if not page_id:
+                        print(f"❌ 创建Notion页面失败: {title}")
+                        error_count += 1
+                        if error_count >= max_errors:
+                            print("❌ 错误次数超过限制，停止同步")
+                            break
+                        continue
+                    
+                    # 添加子内容（目录、笔记、划线等）
+                    print(f"📚 添加详细内容...")
+                    results = add_children(page_id, children, notion_token)
+                    if not results:
+                        print(f"⚠️ 添加子内容失败: {title}，但书籍页面已创建")
+                    
+                    # 处理多级内容（如果需要）
+                    if grandchild and results:
+                        add_grandchild(grandchild, results, notion_token)
+                    
+                    success_count += 1
+                    print(f"✅ 成功添加完整书籍: {title}")
                 
-                # 如果错误次数超过阈值，停止同步
+                # 检查错误计数
                 if error_count >= max_errors:
-                    print(f"❌ 错误次数超过 {max_errors} 次，停止同步")
+                    print("❌ 错误次数超过限制，停止同步")
                     break
                     
             except Exception as e:
                 error_count += 1
                 print(f"❌ 处理书籍时发生异常: {title} - {e}")
                 if error_count >= max_errors:
-                    print(f"❌ 错误次数超过 {max_errors} 次，停止同步")
+                    print("❌ 错误次数超过限制，停止同步")
                     break
             
             # 避免请求过于频繁
             time.sleep(1)
         
         print(f"\n🎉 同步完成！成功: {success_count}, 失败: {error_count}, 总计: {len(books)}")
+        
         
     except Exception as e:
         print(f"❌ 同步过程出现严重错误: {e}")
