@@ -348,7 +348,7 @@ def get_bookmark_list(session,bookId):
         
         print(f"🔍 调试 - 请求划线列表: {url}")
         
-        response = weread_session.get(url, params=params, headers=headers, timeout=30)
+        response = session.get(url, params=params, headers=headers, timeout=30)
         print(f"🔍 调试 - 响应状态: {response.status_code}")
         
         if response.status_code == 200:
