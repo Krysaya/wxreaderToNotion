@@ -334,7 +334,7 @@ def get_bookshelf(session):
 def get_bookmark_list(session,bookId):
     """获取划线列表 - 包含章节和划线信息"""
     try:
-        url = "https://i.weread.qq.com/book/bookmarklist"
+        url = WEREAD_BOOKMARKLIST_URL
         params = {
             'bookId': bookId,
         }
@@ -366,6 +366,15 @@ def get_bookmark_list(session,bookId):
                 'chapters': chapters,
                 'bookmarks': bookmarks
             }
+        elif response.status_code == 401:
+            # 状态码401表示未授权
+            data = response.json()
+            if data.get('errcode') == -2012:
+                print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
+            else:
+                print(f"❌ 未授权错误: {response.status_code} - {data}")
+            return [], []
+
         else:
             print(f"❌ 获取划线列表失败: {response.status_code} - {response.text}")
             return {'chapters': [], 'bookmarks': []}
@@ -402,6 +411,16 @@ def get_review_list(session,bookId):
         summary = [r for r in reviews if r.get('review', {}).get('type') == 4]
         other_reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
         return summary, other_reviews
+        
+    elif response.status_code == 401:
+        # 状态码401表示未授权
+        data = response.json()
+        if data.get('errcode') == -2012:
+            print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
+        else:
+            print(f"❌ 未授权错误: {response.status_code} - {data}")
+        return [], []
+
     else:
         print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
         return [], []
@@ -658,7 +677,49 @@ def add_children(page_id, children, notion_token):
         print(f"❌ 添加子内容时出错: {e}")
         return None
 
+def ensure_valid_cookie(weread_session, original_cookie):
+    """确保Cookie有效，只在必要时刷新"""
+    print("🔍 验证Cookie有效性...")
+    
+    # 简单验证：测试基础接口
+    test_url = "https://i.weread.qq.com/user/notebooks"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://weread.qq.com/',
+    }
+    
+    try:
+        response = weread_session.get(test_url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            print("✅ Cookie验证成功")
+            return weread_session, original_cookie, True
+        else:
+            print(f"❌ Cookie验证失败: {response.status_code}")
+            return None, None, False
+    except Exception as e:
+        print(f"❌ Cookie验证异常: {e}")
+        return None, None, False
 
+def refresh_cookie_if_needed(weread_session, original_cookie):
+    """如果需要，刷新Cookie"""
+    print("🔄 检测到Cookie失效,尝试刷新...")
+    
+    refreshed_cookie = refresh_session(original_cookie)
+    
+    if refreshed_cookie != original_cookie:
+        print("✅ Cookie刷新成功")
+        # 重新初始化session
+        new_session = requests.Session()
+        new_session.cookies.update(parse_cookie_string(refreshed_cookie))
+        new_session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Referer': 'https://weread.qq.com/',
+        })
+        return new_session, refreshed_cookie, True
+    else:
+        print("❌ Cookie刷新失败")
+        return None, None, False
 
 def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
@@ -676,26 +737,21 @@ def main(weread_token, notion_token, database_id):
             'Origin': 'https://weread.qq.com',
         })
 
-        # 2. 测试Notion连接
-        print("测试Notion连接...")
-        db_info_url = f"https://api.notion.com/v1/databases/{database_id}"
-        headers = {
-            "Authorization": f"Bearer {notion_token}",
-            "Notion-Version": "2022-06-28"
-        }
-        response = requests.get(db_info_url, headers=headers)
-        if response.status_code != 200:
-            print(f"❌ Notion连接失败: {response.status_code}")
-            return
-        print("✅ Notion连接成功")
-
-        # 获取最新排序值
-        print("正在查询最新排序值...")
-        latest_sort = get_sort(database_id, notion_token)
-        if latest_sort is None:
-            print("❌ 获取排序值失败，停止同步")
-            return
-        print(f"当前最新排序值: {latest_sort}")
+         # 验证Cookie，如果失效则刷新
+        valid_session, current_cookie, is_valid = ensure_valid_cookie(session, weread_cookie)
+        
+        if not is_valid:
+            print("🔄 Cookie无效，尝试刷新...")
+            valid_session, current_cookie, refresh_success = refresh_cookie_if_needed(session, weread_cookie)
+            if not refresh_success:
+                print("❌ Cookie刷新失败，请手动更新Cookie")
+                exit(1)
+        
+        # 使用有效的session继续执行
+        weread_session = valid_session
+        weread_cookie = current_cookie
+        
+        print("✅ Cookie验证通过，开始同步...")
 
         # 获取微信读书书架
         print("获取微信读书书架...")
