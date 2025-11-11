@@ -368,14 +368,14 @@ def get_review_list(session,bookId):
         'synckey': 0,
         'listMode': 0
     }
-        # 使用参考项目的完整请求头
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
-            'Referer': 'https://weread.qq.com/',
-            'Origin': 'https://weread.qq.com'
-        }
+    # 使用参考项目的完整请求头
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
+        'Referer': 'https://weread.qq.com/',
+        'Origin': 'https://weread.qq.com'
+    }
     
     response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
