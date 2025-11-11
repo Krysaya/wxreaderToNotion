@@ -371,6 +371,14 @@ def get_bookmark_list(session,bookId):
             data = response.json()
             if data.get('errcode') == -2012:
                 print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
+                # 直接刷新Cookie
+                if refresh_session_direct(weread_session):
+                    print("✅ Cookie刷新成功，重新请求数据...")
+                    # 递归调用自身进行重试
+                    return get_bookmark_list(bookId, weread_session, original_cookie)
+                else:
+                    print("❌ Cookie刷新失败")
+                    return None
             else:
                 print(f"❌ 未授权错误: {response.status_code} - {data}")
             return [], []
@@ -417,6 +425,14 @@ def get_review_list(session,bookId):
         data = response.json()
         if data.get('errcode') == -2012:
             print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
+             # 直接刷新Cookie
+            if refresh_session_direct(weread_session):
+                print("✅ Cookie刷新成功，重新请求数据...")
+                # 递归调用自身进行重试
+                return get_bookmark_list(bookId, weread_session, original_cookie)
+            else:
+                print("❌ Cookie刷新失败")
+                return None
         else:
             print(f"❌ 未授权错误: {response.status_code} - {data}")
         return [], []
@@ -676,8 +692,9 @@ def add_children(page_id, children, notion_token):
     except Exception as e:
         print(f"❌ 添加子内容时出错: {e}")
         return None
-def refresh_session(weread_session):
-    """刷新微信读书会话 - 直接操作Session对象"""
+
+def refresh_session_direct(weread_session):
+    """刷新微信读书会话 - 直接验证效果"""
     print("🔄 正在刷新微信读书会话...")
     
     # 需要按顺序访问的页面
@@ -686,79 +703,24 @@ def refresh_session(weread_session):
         'https://weread.qq.com/web/shelf',  # 书架页
     ]
     
-    original_cookies = dict(weread_session.cookies)
-    
     for url in urls_to_visit:
         try:
             print(f"🔍 访问: {url}")
-            
-            # 使用当前的Session访问页面，自动处理Cookie
             response = weread_session.get(url, timeout=10, allow_redirects=True)
-            
             print(f"🔍 访问结果: {response.status_code}")
-            
-            # 休眠300ms，模拟真实浏览行为
             time.sleep(0.3)
             
         except Exception as e:
             print(f"❌ 访问 {url} 失败: {e}")
     
-    # 检查Cookie是否更新
-    new_cookies = dict(weread_session.cookies)
-    if new_cookies != original_cookies:
+    # 直接验证刷新后的Cookie是否有效
+    print("🔍 验证刷新后的Cookie...")
+    if verify_cookie_comprehensive(weread_session):
         print("✅ Cookie刷新成功")
-        # 显示更新的字段
-        for key in new_cookies:
-            if key not in original_cookies or original_cookies[key] != new_cookies[key]:
-                print(f"📝 更新字段: {key}")
         return True
     else:
-        print("ℹ️ Cookie未更新")
-        return False
-
-def ensure_valid_cookie(weread_session, original_cookie):
-    """确保Cookie有效，只在必要时刷新"""
-    print("🔍 验证Cookie有效性...")
-    
-    # 简单验证：测试基础接口
-    test_url = "https://i.weread.qq.com/user/notebooks"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://weread.qq.com/',
-    }
-    
-    try:
-        response = weread_session.get(test_url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            print("✅ Cookie验证成功")
-            return weread_session, original_cookie, True
-        else:
-            print(f"❌ Cookie验证失败: {response.status_code}")
-            return None, None, False
-    except Exception as e:
-        print(f"❌ Cookie验证异常: {e}")
-        return None, None, False
-
-def refresh_cookie_if_needed(weread_session, original_cookie):
-    """如果需要，刷新Cookie"""
-    print("🔄 检测到Cookie失效,尝试刷新...")
-    
-    refreshed_cookie = refresh_session(original_cookie)
-    
-    if refreshed_cookie != original_cookie:
-        print("✅ Cookie刷新成功")
-        # 重新初始化session
-        new_session = requests.Session()
-        new_session.cookies.update(parse_cookie_string(refreshed_cookie))
-        new_session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Referer': 'https://weread.qq.com/',
-        })
-        return new_session, refreshed_cookie, True
-    else:
         print("❌ Cookie刷新失败")
-        return None, None, False
+        return False
 
 def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
@@ -776,21 +738,6 @@ def main(weread_token, notion_token, database_id):
             'Origin': 'https://weread.qq.com',
         })
 
-         # 验证Cookie，如果失效则刷新
-        valid_session, current_cookie, is_valid = ensure_valid_cookie(session, weread_token)
-        
-        if not is_valid:
-            print("🔄 Cookie无效，尝试刷新...")
-            valid_session, current_cookie, refresh_success = refresh_cookie_if_needed(session, weread_token)
-            if not refresh_success:
-                print("❌ Cookie刷新失败，请手动更新Cookie")
-                exit(1)
-        
-        # 使用有效的session继续执行
-        session = valid_session
-        weread_token = current_cookie
-        
-        print("✅ Cookie验证通过，开始同步...")
 
         # 获取微信读书书架
         print("获取微信读书书架...")
