@@ -331,7 +331,7 @@ def get_bookshelf(session):
         print(f"获取书架时出错: {e}")
         return None
 
-def get_bookmark_list(bookId, session):
+def get_bookmark_list(session,bookId):
     """获取划线列表 - 使用正确的API端点"""
     url = f"https://i.weread.qq.com/book/bookmarklist"
     params = {
@@ -353,7 +353,7 @@ def get_bookmark_list(bookId, session):
         print(f"❌ 获取划线列表失败: {response.status_code} - {response.text}")
         return []
 
-def get_review_list(bookId, session):
+def get_review_list(session,bookId):
     """获取笔记列表 - 使用正确的API端点"""
     url = f"https://i.weread.qq.com/review/list"
     params = {
@@ -382,7 +382,7 @@ def get_review_list(bookId, session):
         print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
         return [], []
 
-def get_bookinfo(bookId, session):
+def get_bookinfo(session,bookId):
     """获取书籍信息 - 使用正确的API端点"""
     url = f"https://i.weread.qq.com/book/info"
     params = {
@@ -406,7 +406,7 @@ def get_bookinfo(bookId, session):
         print(f"❌ 获取书籍信息失败: {response.status_code} - {response.text}")
         return '', 0
 
-def get_chapter_info(bookId, session):
+def get_chapter_info(session,bookId):
     
     """获取章节信息 - 添加类型检查"""
     print(f"🔍 调试 - session类型: {type(session)}")
