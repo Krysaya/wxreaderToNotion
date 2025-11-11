@@ -737,7 +737,11 @@ def main(weread_token, notion_token, database_id):
             'Referer': 'https://weread.qq.com/',
             'Origin': 'https://weread.qq.com',
         })
-
+        # 原有的同步逻辑，但现在数据获取函数会自己处理Cookie刷新
+        latest_sort = get_sort(database_id, notion_token)
+        if latest_sort is None:
+            print("❌ 获取排序值失败，停止同步")
+            exit(1)
 
         # 获取微信读书书架
         print("获取微信读书书架...")
