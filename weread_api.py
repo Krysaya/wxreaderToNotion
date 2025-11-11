@@ -331,23 +331,21 @@ def get_bookshelf(session):
         print(f"获取书架时出错: {e}")
         return None
 
-def get_bookmark_list(session,bookId):
-    """获取划线列表 - 使用正确的API端点"""
-    url = f"https://i.weread.qq.com/book/bookmarklist"
-    params = {
-        'bookId': bookId,
-        'chapterUids': '',  # 参考项目中的参数
-    }
- 
-    # 使用参考项目的完整请求头
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
-        'Referer': 'https://weread.qq.com/',
-        'Origin': 'https://weread.qq.com'
-    }
-    
+def get_bookmark_list(bookId, weread_session):
+    """获取划线列表 - 包含章节和划线信息"""
+    try:
+        url = "https://i.weread.qq.com/book/bookmarklist"
+        params = {
+            'bookId': bookId,
+        }
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': f'https://weread.qq.com/web/reader/{bookId}',
+            'Origin': 'https://weread.qq.com',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        }
+        
         print(f"🔍 调试 - 请求划线列表: {url}")
         
         response = weread_session.get(url, params=params, headers=headers, timeout=30)
