@@ -348,15 +348,32 @@ def get_bookmark_list(session,bookId):
         'Origin': 'https://weread.qq.com'
     }
     
-    response = session.get(url, params=params, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        bookmarks = data.get('updated', [])
-        print(f"✅ 获取划线列表成功: {len(bookmarks)} 条划线")
-        return bookmarks
-    else:
-        print(f"❌ 获取划线列表失败: {response.status_code} - {response.text}")
-        return []
+        print(f"🔍 调试 - 请求划线列表: {url}")
+        
+        response = weread_session.get(url, params=params, headers=headers, timeout=30)
+        print(f"🔍 调试 - 响应状态: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"🔍 调试 - 完整响应数据: {data}")
+            
+            # 获取章节信息
+            chapters = data.get('chapters', [])
+            bookmarks = data.get('updated', [])
+            
+            print(f"✅ 获取数据成功: {len(chapters)} 个章节, {len(bookmarks)} 条划线")
+            
+            # 返回章节和划线数据
+            return {
+                'chapters': chapters,
+                'bookmarks': bookmarks
+            }
+        else:
+            print(f"❌ 获取划线列表失败: {response.status_code} - {response.text}")
+            return {'chapters': [], 'bookmarks': []}
+    except Exception as e:
+        print(f"❌ 获取划线列表异常: {e}")
+        return {'chapters': [], 'bookmarks': []}
 
 def get_review_list(session,bookId):
     """获取笔记列表 - 使用正确的API端点"""
@@ -476,32 +493,41 @@ def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_
         return response.get("id")  # 返回页面ID用于后续添加内容
     return None
 
-def get_children(chapter, summary, bookmark_list):
-    """构建子内容 - 完全参考原文件逻辑"""
+def get_children(bookmark_data, summary, reviews):
+    """构建子内容 - 使用新的数据结构"""
     children = []
-    print(f"🔍 调试 - 章节数据: {chapter is not None}")
-    print(f"🔍 调试 - 总结数量: {len(summary) if summary else 0}")
-    print(f"🔍 调试 - 划线笔记数量: {len(bookmark_list) if bookmark_list else 0}")
-    # 检查是否有任何有效数据
-    has_chapters = chapter and 'updated' in chapter and len(chapter['updated']) > 0
-    has_summary = len(summary) > 0 if summary else False
-    has_bookmarks = len(bookmark_list) > 0 if bookmark_list else False
     
-    if not any([has_chapters, has_summary, has_bookmarks]):
-        print("❌ 没有找到任何章节、总结或划线数据")
+    chapters = bookmark_data.get('chapters', [])
+    bookmarks = bookmark_data.get('bookmarks', [])
+    
+    print(f"🔍 调试 - 章节数量: {len(chapters)}")
+    print(f"🔍 调试 - 划线数量: {len(bookmarks)}")
+    print(f"🔍 调试 - 总结数量: {len(summary)}")
+    print(f"🔍 调试 - 笔记数量: {len(reviews)}")
+    
+    # 检查是否有任何有效数据
+    has_chapters = len(chapters) > 0
+    has_bookmarks = len(bookmarks) > 0
+    has_summary = len(summary) > 0
+    has_reviews = len(reviews) > 0
+    
+    if not any([has_chapters, has_bookmarks, has_summary, has_reviews]):
+        print("❌ 没有找到任何章节、划线、总结或笔记数据")
         return [], {}
-
-    # 添加书籍信息标题
+    
+    # 添加基础标题
     children.append({
         "object": "block",
         "type": "heading_1",
         "heading_1": {
-            "rich_text": [{"type": "text", "text": {"content": "📚 书籍信息"}}]
+            "rich_text": [{"type": "text", "text": {"content": "📚 阅读笔记"}}]
         }
     })
     
     # 处理目录结构
-    if chapter and 'updated' in chapter:
+    if has_chapters:
+        print(f"🔍 调试 - 处理章节: {len(chapters)}个")
+        
         children.append({
             "object": "block", 
             "type": "heading_1",
@@ -510,37 +536,34 @@ def get_children(chapter, summary, bookmark_list):
             }
         })
         
-        for chap in chapter['updated']:
+        for i, chap in enumerate(chapters[:10]):  # 限制数量避免过大
             level = chap.get('level', 1)
             chap_title = chap.get('title', '')
+            chap_uid = chap.get('chapterUid', '')
+            
+            print(f"🔍 调试 - 章节{i+1}: 级别{level}, 标题: {chap_title}")
             
             if level == 1:
                 children.append({
                     "object": "block",
                     "type": "heading_2",
                     "heading_2": {
-                        "rich_text": [{"type": "text", "text": {"content": chap_title}}]
+                        "rich_text": [{"type": "text", "text": {"content": f"{i+1}. {chap_title}"}}]
                     }
                 })
             elif level == 2:
                 children.append({
                     "object": "block",
-                    "type": "heading_3", 
+                    "type": "heading_3",
                     "heading_3": {
-                        "rich_text": [{"type": "text", "text": {"content": chap_title}}]
-                    }
-                })
-            elif level >= 3:
-                children.append({
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": {
-                        "rich_text": [{"type": "text", "text": {"content": chap_title}}]
+                        "rich_text": [{"type": "text", "text": {"content": f"  {i+1}. {chap_title}"}}]
                     }
                 })
     
     # 处理总结
-    if summary:
+    if has_summary:
+        print(f"🔍 调试 - 处理总结: {len(summary)}条")
+        
         children.append({
             "object": "block",
             "type": "heading_1",
@@ -548,7 +571,7 @@ def get_children(chapter, summary, bookmark_list):
                 "rich_text": [{"type": "text", "text": {"content": "💡 读书总结"}}]
             }
         })
-        for s in summary:
+        for i, s in enumerate(summary):
             content = s.get('review', {}).get('content', '')
             if content:
                 children.append({
@@ -560,7 +583,10 @@ def get_children(chapter, summary, bookmark_list):
                 })
     
     # 处理笔记和划线
-    if bookmark_list:
+    all_marks = bookmarks + reviews
+    if all_marks:
+        print(f"🔍 调试 - 处理划线笔记: {len(all_marks)}条")
+        
         children.append({
             "object": "block",
             "type": "heading_1", 
@@ -569,51 +595,41 @@ def get_children(chapter, summary, bookmark_list):
             }
         })
         
-        current_chapter = ""
-        for mark in bookmark_list:
-            # 处理章节标题
-            mark_chapter = mark.get('chapterTitle', '') or mark.get('chapterName', '')
-            if mark_chapter and mark_chapter != current_chapter:
+        # 按章节分组
+        chapter_marks = {}
+        for mark in all_marks:
+            chapter_uid = mark.get('chapterUid', '')
+            if chapter_uid not in chapter_marks:
+                chapter_marks[chapter_uid] = []
+            chapter_marks[chapter_uid].append(mark)
+        
+        # 按章节顺序处理
+        for chap in chapters:
+            chapter_uid = chap.get('chapterUid', '')
+            if chapter_uid in chapter_marks:
+                # 添加章节标题
                 children.append({
                     "object": "block",
                     "type": "heading_2",
                     "heading_2": {
-                        "rich_text": [{"type": "text", "text": {"content": mark_chapter}}]
-                    }
-                })
-                current_chapter = mark_chapter
-            
-            # 处理划线内容
-            content = mark.get('markText', '') or mark.get('content', '')
-            if content:
-                # 添加引用格式的划线内容
-                children.append({
-                    "object": "block",
-                    "type": "quote",
-                    "quote": {
-                        "rich_text": [{"type": "text", "text": {"content": content}}]
+                        "rich_text": [{"type": "text", "text": {"content": chap.get('title', '')}}]
                     }
                 })
                 
-                # 如果有笔记，添加笔记内容
-                abstract = mark.get('abstract', '')
-                if abstract:
-                    children.append({
-                        "object": "block", 
-                        "type": "paragraph",
-                        "paragraph": {
-                            "rich_text": [{"type": "text", "text": {"content": abstract}}]
-                        }
-                    })
+                # 添加该章节的划线和笔记
+                for mark in chapter_marks[chapter_uid]:
+                    content = mark.get('markText', '') or mark.get('content', '')
+                    if content:
+                        children.append({
+                            "object": "block",
+                            "type": "quote",
+                            "quote": {
+                                "rich_text": [{"type": "text", "text": {"content": content}}]
+                            }
+                        })
+    
     print(f"🔍 调试 - 最终生成的子块数量: {len(children)}")
-    print(f"🔍 调试 - 是否有额外内容: {has_additional_content}")
-    
-    # 如果只有基础内容（标题+测试段落），认为没有有效内容
-    if len(children) <= 2 and not has_additional_content:
-        print("❌ 警告: 只有基础测试内容，没有有效的章节、笔记或划线数据")
-        return [], {}
-    
-    return children, {}  # 返回空grandchild，保持接口一致
+    return children, {}
 
 def add_children(page_id, children, notion_token):
     """添加子内容到Notion页面 - 处理分块添加"""
@@ -722,8 +738,8 @@ def main(weread_token, notion_token, database_id):
                     latest_sort += 1
                     
                     # 获取详细数据用于更新内容
-                    print(f"📖 获取章节信息...")
-                    chapter = get_chapter_info(session,book_id)
+                    # print(f"📖 获取章节信息...")
+                    # chapter = get_chapter_info(session,book_id)
                     
                     print(f"📝 获取划线列表...")
                     bookmark_list = get_bookmark_list(session,book_id)
@@ -740,7 +756,7 @@ def main(weread_token, notion_token, database_id):
                     
                     # 构建内容
                     print(f"🔨 构建内容结构...")
-                    children, grandchild = get_children(chapter, summary, bookmark_list)
+                    children, grandchild = get_children(bookmark_list, summary, reviews)
                     
                     # 检查是否有内容生成
                     if not children:
@@ -776,16 +792,16 @@ def main(weread_token, notion_token, database_id):
                     # 新增完整功能：获取详细数据并创建完整页面
                     latest_sort += 1
                     
-                    # 获取章节信息
-                    print(f"📖 获取章节信息...")
-                    chapter = get_chapter_info(session,book_id)
-                    if chapter is None:
-                        print(f"❌ 获取章节信息失败: {title}")
-                        error_count += 1
-                        if error_count >= max_errors:
-                            print("❌ 错误次数超过限制，停止同步")
-                            break
-                        continue
+                    # # 获取章节信息
+                    # print(f"📖 获取章节信息...")
+                    # chapter = get_chapter_info(session,book_id)
+                    # if chapter is None:
+                    #     print(f"❌ 获取章节信息失败: {title}")
+                    #     error_count += 1
+                    #     if error_count >= max_errors:
+                    #         print("❌ 错误次数超过限制，停止同步")
+                    #         break
+                    #     continue
                     
                     # 获取划线列表
                     print(f"📝 获取划线列表...")
@@ -813,7 +829,7 @@ def main(weread_token, notion_token, database_id):
                     isbn, rating = get_bookinfo(session,book_id)
                     
                     # 构建内容结构
-                    children, grandchild = get_children(chapter, summary, bookmark_list)
+                    children, grandchild = get_children(bookmark_list, summary, reviews)
                     # 检查是否有内容生成
                     if not children:
                         print(f"❌ 没有生成任何内容块，跳过书籍: {title}")
