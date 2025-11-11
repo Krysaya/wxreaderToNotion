@@ -360,6 +360,8 @@ def get_bookmark_list(bookId):
     response = session.get(url)
     if response.status_code == 200:
         return response.json().get('updated', [])
+    print(f"❌ 获取划线列表失败: {response.status_code}")
+
     return []
 
 def get_review_list(bookId):
@@ -373,90 +375,21 @@ def get_review_list(bookId):
         summary = [r for r in reviews if r.get('review', {}).get('type') == 4]
         reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
         return summary, reviews
+    print(f"❌ 获取笔记列表失败: {response.status_code}")
+
     return [], []
 
 def get_chapter_info(bookId):
     """获取章节信息"""
-    url = f"WEREAD_CHAPTER_INFO={bookId}"
+    url = f"https://weread.qq.com/web/book/chapterInfos?bookId={bookId}"
     response = session.get(url)
     if response.status_code == 200:
         return response.json()
+    print(f"❌ 获取章节信息失败: {response.status_code}")
     return None
-def get_children(chapter, summary, bookmark_list):
-    """构建子内容"""
-    children = []
-    grandchild = {}
-    
-    # 处理目录
-    if chapter and 'chapters' in chapter:
-        for chap in chapter['chapters']:
-            if chap['level'] == 1:
-                # 一级标题
-                children.append({
-                    "object": "block",
-                    "type": "heading_2",
-                    "heading_2": {
-                        "rich_text": [{"type": "text", "text": {"content": chap['title']}}]
-                    }
-                })
-            elif chap['level'] == 2:
-                # 二级标题
-                children.append({
-                    "object": "block", 
-                    "type": "heading_3",
-                    "heading_3": {
-                        "rich_text": [{"type": "text", "text": {"content": chap['title']}}]
-                    }
-                })
-    
-    # 处理总结
-    if summary:
-        children.append({
-            "object": "block",
-            "type": "heading_2", 
-            "heading_2": {
-                "rich_text": [{"type": "text", "text": {"content": "总结"}}]
-            }
-        })
-        for s in summary:
-            children.append({
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [{"type": "text", "text": {"content": s['review']['content']}}]
-                }
-            })
-    
-    # 处理笔记和划线
-    current_chapter = ""
-    for mark in bookmark_list:
-        # 处理章节标题
-        mark_chapter = mark.get('chapterName', '')
-        if mark_chapter and mark_chapter != current_chapter:
-            children.append({
-                "object": "block",
-                "type": "heading_3",
-                "heading_3": {
-                    "rich_text": [{"type": "text", "text": {"content": mark_chapter}}]
-                }
-            })
-            current_chapter = mark_chapter
-        
-        # 处理划线内容
-        content = mark.get('markText', mark.get('content', ''))
-        if content:
-            children.append({
-                "object": "block",
-                "type": "paragraph", 
-                "paragraph": {
-                    "rich_text": [{"type": "text", "text": {"content": content}}]
-                }
-            })
-    
-    return children, grandchild
 
 def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_id, notion_token):
-    """插入书籍到Notion"""
+    """插入书籍到Notion - 只创建基础页面，不添加内容"""
     properties = {
         "BookName": {"title": [{"text": {"content": title}}]},
         "BookId": {"rich_text": [{"text": {"content": bookId}}]},
@@ -468,19 +401,160 @@ def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_
     if isbn:
         properties["ISBN"] = {"rich_text": [{"text": {"content": isbn}}]}
     
-    return create_page_in_database(database_id, properties, notion_token)
+    response = create_page_in_database(database_id, properties, notion_token)
+    if response:
+        return response.get("id")  # 返回页面ID用于后续添加内容
+    return None
 
-def add_children(id, children, notion_token):
-    """添加子内容到Notion页面"""
+def get_children(chapter, summary, bookmark_list):
+    """构建子内容 - 完全参考原文件逻辑"""
+    children = []
+    
+    # 添加书籍信息标题
+    children.append({
+        "object": "block",
+        "type": "heading_1",
+        "heading_1": {
+            "rich_text": [{"type": "text", "text": {"content": "📚 书籍信息"}}]
+        }
+    })
+    
+    # 处理目录结构
+    if chapter and 'chapters' in chapter:
+        children.append({
+            "object": "block", 
+            "type": "heading_1",
+            "heading_1": {
+                "rich_text": [{"type": "text", "text": {"content": "📖 章节目录"}}]
+            }
+        })
+        
+        for chap in chapter['chapters']:
+            level = chap.get('level', 1)
+            chap_title = chap.get('title', '')
+            
+            if level == 1:
+                children.append({
+                    "object": "block",
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": [{"type": "text", "text": {"content": chap_title}}]
+                    }
+                })
+            elif level == 2:
+                children.append({
+                    "object": "block",
+                    "type": "heading_3", 
+                    "heading_3": {
+                        "rich_text": [{"type": "text", "text": {"content": chap_title}}]
+                    }
+                })
+            elif level >= 3:
+                children.append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [{"type": "text", "text": {"content": chap_title}}]
+                    }
+                })
+    
+    # 处理总结
+    if summary:
+        children.append({
+            "object": "block",
+            "type": "heading_1",
+            "heading_1": {
+                "rich_text": [{"type": "text", "text": {"content": "💡 读书总结"}}]
+            }
+        })
+        for s in summary:
+            content = s.get('review', {}).get('content', '')
+            if content:
+                children.append({
+                    "object": "block",
+                    "type": "paragraph",
+                    "paragraph": {
+                        "rich_text": [{"type": "text", "text": {"content": content}}]
+                    }
+                })
+    
+    # 处理笔记和划线
+    if bookmark_list:
+        children.append({
+            "object": "block",
+            "type": "heading_1", 
+            "heading_1": {
+                "rich_text": [{"type": "text", "text": {"content": "📝 笔记与划线"}}]
+            }
+        })
+        
+        current_chapter = ""
+        for mark in bookmark_list:
+            # 处理章节标题
+            mark_chapter = mark.get('chapterName', '')
+            if mark_chapter and mark_chapter != current_chapter:
+                children.append({
+                    "object": "block",
+                    "type": "heading_2",
+                    "heading_2": {
+                        "rich_text": [{"type": "text", "text": {"content": mark_chapter}}]
+                    }
+                })
+                current_chapter = mark_chapter
+            
+            # 处理划线内容
+            content = mark.get('markText', '') or mark.get('content', '')
+            if content:
+                # 添加引用格式的划线内容
+                children.append({
+                    "object": "block",
+                    "type": "quote",
+                    "quote": {
+                        "rich_text": [{"type": "text", "text": {"content": content}}]
+                    }
+                })
+                
+                # 如果有笔记，添加笔记内容
+                abstract = mark.get('abstract', '')
+                if abstract:
+                    children.append({
+                        "object": "block", 
+                        "type": "paragraph",
+                        "paragraph": {
+                            "rich_text": [{"type": "text", "text": {"content": abstract}}]
+                        }
+                    })
+    
+    return children, {}  # 返回空grandchild，保持接口一致
+
+def add_children(page_id, children, notion_token):
+    """添加子内容到Notion页面 - 处理分块添加"""
     if not children:
+        print("⚠️ 没有子内容需要添加")
         return None
         
-    endpoint = f"/blocks/{id}/children"
-    payload = {"children": children}
-    
-    response = notion_api_request("PATCH", endpoint, payload, notion_token)
-    return response
-
+    try:
+        # Notion API限制每次最多100个子块
+        chunk_size = 100
+        for i in range(0, len(children), chunk_size):
+            chunk = children[i:i + chunk_size]
+            
+            endpoint = f"/blocks/{page_id}/children"
+            payload = {"children": chunk}
+            
+            print(f"🔄 添加子内容块 {i//chunk_size + 1}/{(len(children)-1)//chunk_size + 1}...")
+            response = notion_api_request("PATCH", endpoint, payload, notion_token)
+            
+            if not response:
+                print(f"❌ 添加子内容块失败")
+                return None
+                
+        print(f"✅ 成功添加所有子内容")
+        return True
+        
+    except Exception as e:
+        print(f"❌ 添加子内容时出错: {e}")
+        return None
 
 
 def check_database_structure(database_id, notion_token):
@@ -670,19 +744,17 @@ def main(weread_token, notion_token, database_id):
                         error_count += 1
                         if error_count >= max_errors:
                             print("❌ 错误次数超过限制，停止同步")
-                            break
-                        continue
-                    
-                    # 添加子内容（目录、笔记、划线等）
+                        break
+
+                    # 添加详细内容（目录、笔记、划线等）
                     print(f"📚 添加详细内容...")
-                    results = add_children(page_id, children, notion_token)
-                    if not results:
-                        print(f"⚠️ 添加子内容失败: {title}，但书籍页面已创建")
-                    
-                    # 处理多级内容（如果需要）
-                    if grandchild and results:
-                        add_grandchild(grandchild, results, notion_token)
-                    
+                    if children:  # 只有在有内容时才添加
+                        results = add_children(page_id, children, notion_token)
+                        if not results:
+                            print(f"⚠️ 添加子内容失败: {title}，但书籍页面已创建")
+                    else:
+                        print(f"ℹ️ 没有找到章节或笔记内容: {title}")
+
                     success_count += 1
                     print(f"✅ 成功添加完整书籍: {title}")
                 
