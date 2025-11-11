@@ -414,7 +414,15 @@ def get_children(chapter, summary, bookmark_list):
     print(f"🔍 调试 - 章节数据: {chapter is not None}")
     print(f"🔍 调试 - 总结数量: {len(summary) if summary else 0}")
     print(f"🔍 调试 - 划线笔记数量: {len(bookmark_list) if bookmark_list else 0}")
-        
+    # 检查是否有任何有效数据
+    has_chapters = chapter and 'chapters' in chapter and len(chapter['chapters']) > 0
+    has_summary = len(summary) > 0 if summary else False
+    has_bookmarks = len(bookmark_list) > 0 if bookmark_list else False
+    
+    if not any([has_chapters, has_summary, has_bookmarks]):
+        print("❌ 没有找到任何章节、总结或划线数据")
+        return [], {}    
+    
     # 添加书籍信息标题
     children.append({
         "object": "block",
@@ -696,14 +704,61 @@ def main(weread_token, notion_token, database_id):
             
             try:
                 if existing_page_id:
-                    # 更新现有书籍 - 保留原有逻辑
+                    # 更新现有书籍 - 同时添加或更新内容
+                    print(f"🔄 书籍已存在，更新内容: {title}")
                     latest_sort += 1
-                    if update_book_in_notion(existing_page_id, book, latest_sort, notion_token):
-                        success_count += 1
-                        print(f"✅ 成功更新书籍: {title}")
-                    else:
+                    
+                    # 获取详细数据用于更新内容
+                    print(f"📖 获取章节信息...")
+                    chapter = get_chapter_info(book_id)
+                    
+                    print(f"📝 获取划线列表...")
+                    bookmark_list = get_bookmark_list(book_id)
+                    
+                    print(f"💭 获取笔记和评论...")
+                    summary, reviews = get_review_list(book_id)
+                    bookmark_list.extend(reviews)
+                    
+                    # 排序内容
+                    bookmark_list = sorted(bookmark_list, key=lambda x: (
+                        x.get("chapterUid", 1), 
+                        0 if x.get("range", "") == "" else int(x.get("range").split("-")[0])
+                    ))
+                    
+                    # 构建内容
+                    print(f"🔨 构建内容结构...")
+                    children, grandchild = get_children(chapter, summary, bookmark_list)
+                    
+                    # 检查是否有内容生成
+                    if not children:
+                        print(f"❌ 没有生成任何内容块，跳过书籍: {title}")
                         error_count += 1
-                        print(f"❌ 更新书籍失败: {title}")
+                        if error_count >= max_errors:
+                            print("❌ 错误次数超过限制，停止同步")
+                            break
+                        continue
+                    
+                    print(f"✅ 成功生成 {len(children)} 个内容块")
+                    
+                    # 先更新排序
+                    if update_book_in_notion(existing_page_id, book, latest_sort, notion_token):
+                        print(f"✅ 成功更新书籍排序: {title}")
+                    else:
+                        print(f"❌ 更新书籍排序失败: {title}")
+                    
+                    # 然后添加内容
+                    print(f"📚 为已存在书籍添加内容...")
+                    results = add_children(existing_page_id, children, notion_token)
+                    if not results:
+                        print(f"❌ 为已存在书籍添加内容失败: {title}")
+                        error_count += 1
+                        if error_count >= max_errors:
+                            print("❌ 错误次数超过限制，停止同步")
+                            break
+                        continue
+                        
+                    success_count += 1
+                    print(f"✅ 成功更新书籍内容: {title}")
                 else:
                     # 新增完整功能：获取详细数据并创建完整页面
                     latest_sort += 1
