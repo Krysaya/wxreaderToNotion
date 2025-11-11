@@ -346,17 +346,8 @@ def get_bookinfo(session, bookId):
         print(f"获取书籍详情时出错: {e}")
         return None
 
-def get_notebooklist():
-    """获取笔记本列表"""
-    url = WEREAD_NOTEBOOKS_URL
-    response = session.get(url)
-    if response.status_code == 200:
-        return response.json()
-    print(f"❌ 获取笔记本列表失败: {response.status_code}")
 
-    return None
-
-def get_bookmark_list(bookId):
+def get_bookmark_list(session,bookId):
     """获取划线列表"""
     url = f"https://i.weread.qq.com/book/bookmarklist?bookId={bookId}"
     response = session.get(url)
@@ -366,7 +357,7 @@ def get_bookmark_list(bookId):
 
     return []
 
-def get_review_list(bookId):
+def get_review_list(session,bookId):
     """获取笔记列表"""
     url = f"https://i.weread.qq.com/web/review/list?bookId={bookId}&listType=11&mine=1&synckey=0&listMode=0"
     response = session.get(url)
@@ -381,7 +372,7 @@ def get_review_list(bookId):
 
     return [], []
 
-def get_chapter_info(bookId):
+def get_chapter_info(session,bookId):
     """获取章节信息"""
     url = f"https://weread.qq.com/web/book/chapterInfos?bookId={bookId}"
     response = session.get(url)
@@ -710,13 +701,13 @@ def main(weread_token, notion_token, database_id):
                     
                     # 获取详细数据用于更新内容
                     print(f"📖 获取章节信息...")
-                    chapter = get_chapter_info(book_id)
+                    chapter = get_chapter_info(session,book_id)
                     
                     print(f"📝 获取划线列表...")
-                    bookmark_list = get_bookmark_list(book_id)
+                    bookmark_list = get_bookmark_list(session,book_id)
                     
                     print(f"💭 获取笔记和评论...")
-                    summary, reviews = get_review_list(book_id)
+                    summary, reviews = get_review_list(session,book_id)
                     bookmark_list.extend(reviews)
                     
                     # 排序内容
@@ -765,7 +756,7 @@ def main(weread_token, notion_token, database_id):
                     
                     # 获取章节信息
                     print(f"📖 获取章节信息...")
-                    chapter = get_chapter_info(book_id)
+                    chapter = get_chapter_info(session,book_id)
                     if chapter is None:
                         print(f"❌ 获取章节信息失败: {title}")
                         error_count += 1
@@ -776,7 +767,7 @@ def main(weread_token, notion_token, database_id):
                     
                     # 获取划线列表
                     print(f"📝 获取划线列表...")
-                    bookmark_list = get_bookmark_list(book_id)
+                    bookmark_list = get_bookmark_list(session,book_id)
                     if bookmark_list is None:
                         print(f"❌ 获取划线列表失败: {title}")
                         error_count += 1
@@ -787,7 +778,7 @@ def main(weread_token, notion_token, database_id):
                     
                     # 获取笔记和评论
                     print(f"💭 获取笔记和评论...")
-                    summary, reviews = get_review_list(book_id)
+                    summary, reviews = get_review_list(session,book_id)
                     bookmark_list.extend(reviews)
                     
                     # 排序内容
@@ -797,7 +788,7 @@ def main(weread_token, notion_token, database_id):
                     ))
                     
                     # 获取书籍详细信息
-                    isbn, rating = get_bookinfo(book_id)
+                    isbn, rating = get_bookinfo(session,book_id)
                     
                     # 构建内容结构
                     children, grandchild = get_children(chapter, summary, bookmark_list)
