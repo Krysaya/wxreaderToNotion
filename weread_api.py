@@ -331,55 +331,104 @@ def get_bookshelf(session):
         print(f"获取书架时出错: {e}")
         return None
 
-def get_bookinfo(session, bookId):
-    """获取书籍详情"""
-    try:
-        url = f"https://i.weread.qq.com/api/book/info?bookId={bookId}"
-        r = session.get(url)
-        isbn = ""
-        if r.ok:
-            data = r.json()
-            isbn = data["isbn"]
-            rating = data["newRating"]/1000
-        return (isbn, rating)
-    except Exception as e:
-        print(f"获取书籍详情时出错: {e}")
-        return None
-
-
-def get_bookmark_list(session,bookId):
-    """获取划线列表"""
-    url = f"https://i.weread.qq.com/book/bookmarklist?bookId={bookId}"
-    response = session.get(url)
+def get_bookmark_list(bookId, session):
+    """获取划线列表 - 使用正确的API端点"""
+    url = f"https://i.weread.qq.com/book/bookmarklist"
+    params = {
+        'bookId': bookId,
+        'chapterUids': '',  # 参考项目中的参数
+    }
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://weread.qq.com/'
+    }
+    
+    response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
-        return response.json().get('updated', [])
-    print(f"❌ 获取划线列表失败: {response.status_code}")
+        data = response.json()
+        bookmarks = data.get('updated', [])
+        print(f"✅ 获取划线列表成功: {len(bookmarks)} 条划线")
+        return bookmarks
+    else:
+        print(f"❌ 获取划线列表失败: {response.status_code} - {response.text}")
+        return []
 
-    return []
-
-def get_review_list(session,bookId):
-    """获取笔记列表"""
-    url = f"https://i.weread.qq.com/web/review/list?bookId={bookId}&listType=11&mine=1&synckey=0&listMode=0"
-    response = session.get(url)
+def get_review_list(bookId, session):
+    """获取笔记列表 - 使用正确的API端点"""
+    url = f"https://i.weread.qq.com/review/list"
+    params = {
+        'bookId': bookId,
+        'listType': 11,
+        'mine': 1,
+        'synckey': 0,
+        'listMode': 0
+    }
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://weread.qq.com/'
+    }
+    
+    response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
         data = response.json()
         reviews = data.get('reviews', [])
+        print(f"✅ 获取笔记列表成功: {len(reviews)} 条笔记")
+        
         # 分离总结和笔记
         summary = [r for r in reviews if r.get('review', {}).get('type') == 4]
-        reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
-        return summary, reviews
-    print(f"❌ 获取笔记列表失败: {response.status_code}")
+        other_reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
+        return summary, other_reviews
+    else:
+        print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
+        return [], []
 
-    return [], []
-
-def get_chapter_info(session,bookId):
-    """获取章节信息"""
-    url = f"https://weread.qq.com/web/book/chapterInfos?bookId={bookId}"
-    response = session.get(url)
+def get_bookinfo(bookId, session):
+    """获取书籍信息 - 使用正确的API端点"""
+    url = f"https://i.weread.qq.com/book/info"
+    params = {
+        'bookId': bookId
+    }
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://weread.qq.com/'
+    }
+    
+    response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
-        return response.json()
-    print(f"❌ 获取章节信息失败: {response.status_code}")
-    return None
+        data = response.json()
+        isbn = data.get('isbn', '')
+        rating = data.get('newRating', 0) or data.get('rating', 0)
+        print(f"✅ 获取书籍信息成功: ISBN={isbn}, 评分={rating}")
+        return isbn, rating
+    else:
+        print(f"❌ 获取书籍信息失败: {response.status_code} - {response.text}")
+        return '', 0
+
+def get_chapter_info(bookId, session):
+    """获取章节信息 - 使用正确的API端点"""
+    url = f"https://i.weread.qq.com/book/chapterInfos"
+    params = {
+        'bookIds': [bookId],
+        'synckeys': [0]
+    }
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Referer': 'https://weread.qq.com/'
+    }
+    
+    response = session.post(url, json=params, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        if data and 'data' in data and bookId in data['data']:
+            chapter_info = data['data'][bookId]
+            print(f"✅ 获取章节信息成功: {len(chapter_info.get('updated', []))} 个章节")
+            return chapter_info
+        else:
+            print("⚠️ 章节数据格式异常")
+            return None
+    else:
+        print(f"❌ 获取章节信息失败: {response.status_code} - {response.text}")
+        return None
 
 def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_id, notion_token):
     """插入书籍到Notion - 只创建基础页面，不添加内容"""
@@ -406,14 +455,14 @@ def get_children(chapter, summary, bookmark_list):
     print(f"🔍 调试 - 总结数量: {len(summary) if summary else 0}")
     print(f"🔍 调试 - 划线笔记数量: {len(bookmark_list) if bookmark_list else 0}")
     # 检查是否有任何有效数据
-    has_chapters = chapter and 'chapters' in chapter and len(chapter['chapters']) > 0
+    has_chapters = chapter and 'updated' in chapter and len(chapter['updated']) > 0
     has_summary = len(summary) > 0 if summary else False
     has_bookmarks = len(bookmark_list) > 0 if bookmark_list else False
     
     if not any([has_chapters, has_summary, has_bookmarks]):
         print("❌ 没有找到任何章节、总结或划线数据")
-        return [], {}    
-    
+        return [], {}
+
     # 添加书籍信息标题
     children.append({
         "object": "block",
@@ -424,7 +473,7 @@ def get_children(chapter, summary, bookmark_list):
     })
     
     # 处理目录结构
-    if chapter and 'chapters' in chapter:
+    if chapter and 'updated' in chapter:
         children.append({
             "object": "block", 
             "type": "heading_1",
@@ -433,7 +482,7 @@ def get_children(chapter, summary, bookmark_list):
             }
         })
         
-        for chap in chapter['chapters']:
+        for chap in chapter['updated']:
             level = chap.get('level', 1)
             chap_title = chap.get('title', '')
             
@@ -495,7 +544,7 @@ def get_children(chapter, summary, bookmark_list):
         current_chapter = ""
         for mark in bookmark_list:
             # 处理章节标题
-            mark_chapter = mark.get('chapterName', '')
+            mark_chapter = mark.get('chapterTitle', '') or mark.get('chapterName', '')
             if mark_chapter and mark_chapter != current_chapter:
                 children.append({
                     "object": "block",
@@ -568,57 +617,6 @@ def add_children(page_id, children, notion_token):
         return None
 
 
-def check_database_structure(database_id, notion_token):
-    """检查数据库结构，确认字段配置"""
-    print("🔍 检查数据库结构...")
-    url = f"https://api.notion.com/v1/databases/{database_id}"
-    headers = {
-        "Authorization": f"Bearer {notion_token}",
-        "Notion-Version": "2022-06-28"
-    }
-    
-    response = requests.get(url, headers=headers)
-    if response.status_code == 200:
-        db_info = response.json()
-        properties = db_info.get('properties', {})
-        print("✅ 数据库字段列表:")
-        for prop_name, prop_config in properties.items():
-            prop_type = prop_config.get('type', 'unknown')
-            print(f"   - {prop_name} ({prop_type})")
-        return properties
-    else:
-        print(f"❌ 无法获取数据库结构: {response.status_code} - {response.text}")
-        return None
-    """创建最小化的测试页面，排除字段问题"""
-    print("🧪 创建最小化测试页面...")
-    
-    # 最简单的页面创建请求
-    minimal_payload = {
-        "parent": {"database_id": database_id},
-        "properties": {
-            "BookName": {
-                "title": [
-                    {
-                        "text": {"content": "测试书籍"}
-                    }
-                ]
-            }
-        }
-    }
-    
-    # 测试1: 只有标题
-    print("测试1: 只有标题字段")
-    result1 = notion_api_request("POST", "/pages", minimal_payload, notion_token)
-    
-    if result1:
-        print("✅ 测试1成功 - 问题在其他字段")
-        # 删除测试页面
-        page_id = result1["id"]
-        notion_api_request("DELETE", f"/pages/{page_id}", notion_token=notion_token)
-        return True
-    else:
-        print("❌ 测试1失败 - 基本配置有问题")
-        return False
 
 def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
