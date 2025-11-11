@@ -411,7 +411,7 @@ def get_review_list(session,bookId):
         summary = [r for r in reviews if r.get('review', {}).get('type') == 4]
         other_reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
         return summary, other_reviews
-        
+
     elif response.status_code == 401:
         # 状态码401表示未授权
         data = response.json()
@@ -738,18 +738,18 @@ def main(weread_token, notion_token, database_id):
         })
 
          # 验证Cookie，如果失效则刷新
-        valid_session, current_cookie, is_valid = ensure_valid_cookie(session, weread_cookie)
+        valid_session, current_cookie, is_valid = ensure_valid_cookie(session, weread_token)
         
         if not is_valid:
             print("🔄 Cookie无效，尝试刷新...")
-            valid_session, current_cookie, refresh_success = refresh_cookie_if_needed(session, weread_cookie)
+            valid_session, current_cookie, refresh_success = refresh_cookie_if_needed(session, weread_token)
             if not refresh_success:
                 print("❌ Cookie刷新失败，请手动更新Cookie")
                 exit(1)
         
         # 使用有效的session继续执行
         weread_session = valid_session
-        weread_cookie = current_cookie
+        weread_token = current_cookie
         
         print("✅ Cookie验证通过，开始同步...")
 
