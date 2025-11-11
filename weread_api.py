@@ -632,12 +632,7 @@ def main(weread_token, notion_token, database_id):
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
             'Referer': 'https://weread.qq.com/',
         })
-        # 1. 先检查数据库结构
-        db_properties = check_database_structure(database_id, notion_token)
-        if not db_properties:
-            print("❌ 数据库结构检查失败，停止同步")
-            return
-       
+
         # 2. 测试Notion连接
         print("测试Notion连接...")
         db_info_url = f"https://api.notion.com/v1/databases/{database_id}"
