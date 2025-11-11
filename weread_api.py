@@ -339,9 +339,14 @@ def get_bookmark_list(session,bookId):
         'chapterUids': '',  # 参考项目中的参数
     }
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://weread.qq.com/'
-    }
+        # 使用参考项目的完整请求头
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
+            'Referer': 'https://weread.qq.com/',
+            'Origin': 'https://weread.qq.com'
+        }
     
     response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
@@ -363,10 +368,14 @@ def get_review_list(session,bookId):
         'synckey': 0,
         'listMode': 0
     }
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://weread.qq.com/'
-    }
+        # 使用参考项目的完整请求头
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
+            'Referer': 'https://weread.qq.com/',
+            'Origin': 'https://weread.qq.com'
+        }
     
     response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
@@ -387,11 +396,16 @@ def get_bookinfo(session,bookId):
     url = f"https://i.weread.qq.com/book/info"
     params = {
         'bookId': bookId
-    }
+    }        
+    # 使用参考项目的完整请求头
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://weread.qq.com/'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
+            'Referer': 'https://weread.qq.com/',
+            'Origin': 'https://weread.qq.com'
     }
+
     
     response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
@@ -423,8 +437,11 @@ def get_chapter_info(session,bookId):
         'synckeys': [0]
     }
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Referer': 'https://weread.qq.com/'
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
+            'Referer': 'https://weread.qq.com/',
+            'Origin': 'https://weread.qq.com'
     }
     
     response = session.post(url, json=params, headers=headers)
@@ -642,6 +659,7 @@ def main(weread_token, notion_token, database_id):
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
             'Referer': 'https://weread.qq.com/',
+            'Origin': 'https://weread.qq.com',
         })
 
         # 2. 测试Notion连接
