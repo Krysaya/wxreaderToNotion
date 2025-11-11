@@ -63,6 +63,8 @@ def notion_api_request(method, endpoint, payload=None, notion_token=None, timeou
             
     except Exception as e:
         print(f"🔴 API请求异常: {e}")
+        import traceback
+        print(f"🔴 详细异常: {traceback.format_exc()}")
         return None
 
 def query_data_source(database_id, filter_condition=None, sorts=None, page_size=1, notion_token=None):
@@ -409,7 +411,10 @@ def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_
 def get_children(chapter, summary, bookmark_list):
     """构建子内容 - 完全参考原文件逻辑"""
     children = []
-    
+    print(f"🔍 调试 - 章节数据: {chapter is not None}")
+    print(f"🔍 调试 - 总结数量: {len(summary) if summary else 0}")
+    print(f"🔍 调试 - 划线笔记数量: {len(bookmark_list) if bookmark_list else 0}")
+        
     # 添加书籍信息标题
     children.append({
         "object": "block",
@@ -524,6 +529,13 @@ def get_children(chapter, summary, bookmark_list):
                             "rich_text": [{"type": "text", "text": {"content": abstract}}]
                         }
                     })
+    print(f"🔍 调试 - 最终生成的子块数量: {len(children)}")
+    print(f"🔍 调试 - 是否有额外内容: {has_additional_content}")
+    
+    # 如果只有基础内容（标题+测试段落），认为没有有效内容
+    if len(children) <= 2 and not has_additional_content:
+        print("❌ 警告: 只有基础测试内容，没有有效的章节、笔记或划线数据")
+        return [], {}
     
     return children, {}  # 返回空grandchild，保持接口一致
 
@@ -734,7 +746,17 @@ def main(weread_token, notion_token, database_id):
                     
                     # 构建内容结构
                     children, grandchild = get_children(chapter, summary, bookmark_list)
-                    
+                    # 检查是否有内容生成
+                    if not children:
+                        print(f"❌ 没有生成任何内容块，跳过书籍: {title}")
+                        error_count += 1
+                        if error_count >= max_errors:
+                            print("❌ 错误次数超过限制，停止同步")
+                            break
+                        continue
+
+                    print(f"✅ 成功生成 {len(children)} 个内容块")
+
                     # 创建Notion页面 - 使用原有的add_book_to_notion函数
                     print(f"🔄 创建Notion页面...")
                     page_id = insert_to_notion(title, book_id, book.get('cover', ''), latest_sort, 
