@@ -67,7 +67,7 @@ def notion_api_request(method, endpoint, payload=None, notion_token=None, timeou
         print(f"🔴 详细异常: {traceback.format_exc()}")
         return None
 
-def query_data_source(database_id, filter_condition=None, sorts=None, page_size=1, notion_token=None):
+def query_database(database_id, filter_condition=None, sorts=None, page_size=1, notion_token=None):
     # 查询数据库 - 
     endpoint = f"/databases/{database_id}/query"
     
@@ -338,15 +338,15 @@ def get_bookmark_list(session,bookId):
         'bookId': bookId,
         'chapterUids': '',  # 参考项目中的参数
     }
+ 
+    # 使用参考项目的完整请求头
     headers = {
-        # 使用参考项目的完整请求头
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
-            'Referer': 'https://weread.qq.com/',
-            'Origin': 'https://weread.qq.com'
-        }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
+        'Referer': 'https://weread.qq.com/',
+        'Origin': 'https://weread.qq.com'
+    }
     
     response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
