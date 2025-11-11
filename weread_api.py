@@ -676,6 +676,45 @@ def add_children(page_id, children, notion_token):
     except Exception as e:
         print(f"❌ 添加子内容时出错: {e}")
         return None
+def refresh_session(weread_session):
+    """刷新微信读书会话 - 直接操作Session对象"""
+    print("🔄 正在刷新微信读书会话...")
+    
+    # 需要按顺序访问的页面
+    urls_to_visit = [
+        'https://weread.qq.com/',  # 首页
+        'https://weread.qq.com/web/shelf',  # 书架页
+    ]
+    
+    original_cookies = dict(weread_session.cookies)
+    
+    for url in urls_to_visit:
+        try:
+            print(f"🔍 访问: {url}")
+            
+            # 使用当前的Session访问页面，自动处理Cookie
+            response = weread_session.get(url, timeout=10, allow_redirects=True)
+            
+            print(f"🔍 访问结果: {response.status_code}")
+            
+            # 休眠300ms，模拟真实浏览行为
+            time.sleep(0.3)
+            
+        except Exception as e:
+            print(f"❌ 访问 {url} 失败: {e}")
+    
+    # 检查Cookie是否更新
+    new_cookies = dict(weread_session.cookies)
+    if new_cookies != original_cookies:
+        print("✅ Cookie刷新成功")
+        # 显示更新的字段
+        for key in new_cookies:
+            if key not in original_cookies or original_cookies[key] != new_cookies[key]:
+                print(f"📝 更新字段: {key}")
+        return True
+    else:
+        print("ℹ️ Cookie未更新")
+        return False
 
 def ensure_valid_cookie(weread_session, original_cookie):
     """确保Cookie有效，只在必要时刷新"""
