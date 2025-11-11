@@ -748,7 +748,7 @@ def main(weread_token, notion_token, database_id):
                 exit(1)
         
         # 使用有效的session继续执行
-        weread_session = valid_session
+        session = valid_session
         weread_token = current_cookie
         
         print("✅ Cookie验证通过，开始同步...")
