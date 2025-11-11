@@ -151,7 +151,7 @@ def check(bookId, database_id, notion_token):
         }
         
         print(f"检查书籍是否存在: {bookId}")
-        response = query_data_source(
+        response = query_database(
             database_id=database_id,
             filter_condition=filter_condition,
             notion_token=notion_token
@@ -440,7 +440,7 @@ def get_chapter_info(session,bookId):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
-            'Referer': 'https://weread.qq.com/',
+            'Referer': 'https://weread.qq.com/web/reader/${bookId}',
             'Origin': 'https://weread.qq.com'
     }
     
