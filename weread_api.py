@@ -331,7 +331,7 @@ def get_bookshelf(session):
         print(f"获取书架时出错: {e}")
         return None
 
-def get_bookmark_list(bookId, weread_session):
+def get_bookmark_list(session,bookId):
     """获取划线列表 - 包含章节和划线信息"""
     try:
         url = "https://i.weread.qq.com/book/bookmarklist"
@@ -744,7 +744,7 @@ def main(weread_token, notion_token, database_id):
                     
                     print(f"💭 获取笔记和评论...")
                     summary, reviews = get_review_list(session,book_id)
-                    bookmark_list.extend(reviews)
+                    # bookmark_list.extend(reviews)
                     
                     # 排序内容
                     bookmark_list = sorted(bookmark_list, key=lambda x: (
@@ -815,7 +815,7 @@ def main(weread_token, notion_token, database_id):
                     # 获取笔记和评论
                     print(f"💭 获取笔记和评论...")
                     summary, reviews = get_review_list(session,book_id)
-                    bookmark_list.extend(reviews)
+                    # bookmark_list.extend(reviews)
                     
                     # 排序内容
                     bookmark_list = sorted(bookmark_list, key=lambda x: (
