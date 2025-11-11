@@ -133,7 +133,7 @@ def get_sort(database_id, notion_token):
                 print(f"⚠️ Sort属性类型不是number: {sort_property.get('type')}")
                 return 0
         else:
-            print("ℹ️ 未找到任何记录，使用默认排序值0")
+            print("ℹ️ 未找到任何记录,使用默认排序值0")
             return 0
         
     except Exception as e:
