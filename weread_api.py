@@ -728,15 +728,11 @@ def refresh_session_simple(current_cookie):
         shelf_resp = session.get("https://weread.qq.com/web/shelf", timeout=10)
         print(f"   状态: {shelf_resp.status_code}")
         
-        # 第三步：访问书籍列表
-        book_list_url = "https://weread.qq.com/web/book/list"
-        print("🔍 访问: https://weread.qq.com/web/book/list")
-        book_resp = session.get(book_list_url, timeout=10)
-        print(f"   状态: {book_resp.status_code}")
+        
 
         # 获取所有响应中的cookie
         all_response_cookies = []
-        for resp in [home_resp, shelf_resp, book_resp]:
+        for resp in [home_resp, shelf_resp]:
             if resp.cookies:
                 all_response_cookies.append(resp.cookies.get_dict())
         
