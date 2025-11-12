@@ -372,23 +372,19 @@ def get_bookmark_list(session,bookId):
             if data.get('errcode') == -2012:
                 print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
                 # 直接刷新Cookie
-                if refresh_session_direct(weread_session):
-                    print("✅ Cookie刷新成功，重新请求数据...")
-                    # 递归调用自身进行重试
-                    return get_bookmark_list(bookId, weread_session, original_cookie)
-                else:
-                    print("❌ Cookie刷新失败")
-                    return None
+                new_cookie = refresh_session(current_cookie)
+                # 递归重试
+                return get_bookmark_list(bookId, new_cookie)
             else:
-                print(f"❌ 未授权错误: {response.status_code} - {data}")
-            return [], []
-
+                print(f"❌ 其他授权错误: {data}")
+                return [], []
         else:
-            print(f"❌ 获取划线列表失败: {response.status_code} - {response.text}")
-            return {'chapters': [], 'bookmarks': []}
+            print(f"❌ 获取划线失败: {response.status_code}")
+            return None
+            
     except Exception as e:
-        print(f"❌ 获取划线列表异常: {e}")
-        return {'chapters': [], 'bookmarks': []}
+        print(f"❌ 获取划线异常: {e}")
+        return None
 
 def get_review_list(session,bookId):
     """获取笔记列表 - 使用正确的API端点"""
@@ -426,13 +422,11 @@ def get_review_list(session,bookId):
         if data.get('errcode') == -2012:
             print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
              # 直接刷新Cookie
-            if refresh_session_direct(weread_session):
-                print("✅ Cookie刷新成功，重新请求数据...")
-                # 递归调用自身进行重试
-                return get_bookmark_list(bookId, weread_session, original_cookie)
-            else:
-                print("❌ Cookie刷新失败")
-                return None
+        
+            new_cookie = refresh_session(current_cookie)
+            # 递归重试
+            return get_review_list(session,bookId)
+        
         else:
             print(f"❌ 未授权错误: {response.status_code} - {data}")
         return [], []
@@ -693,35 +687,64 @@ def add_children(page_id, children, notion_token):
         print(f"❌ 添加子内容时出错: {e}")
         return None
 
-def refresh_session_direct(weread_session):
-    """刷新微信读书会话 - 直接验证效果"""
+def update_cookie_from_response(current_cookie, set_cookie_headers):
+    """从响应头更新Cookie"""
+    cookie_dict = {}
+    
+    # 解析当前Cookie
+    for item in current_cookie.split('; '):
+        if '=' in item:
+            key, value = item.split('=', 1)
+            cookie_dict[key.strip()] = value
+    
+    # 更新新Cookie
+    for set_cookie in set_cookie_headers:
+        # 取第一个分号前的内容
+        cookie_parts = set_cookie.split(';')[0].strip()
+        if '=' in cookie_parts:
+            key, value = cookie_parts.split('=', 1)
+            cookie_dict[key.strip()] = value
+            print(f"🔄 更新Cookie字段: {key.strip()}")
+    
+    # 重新构建Cookie字符串
+    new_cookie = '; '.join([f"{k}={v}" for k, v in cookie_dict.items()])
+    return new_cookie
+
+def refresh_session(current_cookie):
+    """刷新微信读书会话"""
     print("🔄 正在刷新微信读书会话...")
     
-    # 需要按顺序访问的页面
     urls_to_visit = [
         'https://weread.qq.com/',  # 首页
         'https://weread.qq.com/web/shelf',  # 书架页
     ]
     
+    updated_cookie = current_cookie
+    
     for url in urls_to_visit:
         try:
             print(f"🔍 访问: {url}")
-            response = weread_session.get(url, timeout=10, allow_redirects=True)
-            print(f"🔍 访问结果: {response.status_code}")
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Cookie': updated_cookie,
+                'Referer': 'https://weread.qq.com/',
+            }
+            
+            response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
+            
+            # 检查是否有新Cookie
+            if 'set-cookie' in response.headers:
+                set_cookie_headers = response.headers.get_list('set-cookie')
+                if set_cookie_headers:
+                    print("🔄 服务端返回了新的Cookie")
+                    updated_cookie = update_cookie_from_response(updated_cookie, set_cookie_headers)
+            
             time.sleep(0.3)
             
         except Exception as e:
             print(f"❌ 访问 {url} 失败: {e}")
     
-    # 直接验证刷新后的Cookie是否有效
-    print("🔍 验证刷新后的Cookie...")
-    if verify_cookie_comprehensive(weread_session):
-        print("✅ Cookie刷新成功")
-        return True
-    else:
-        print("❌ Cookie刷新失败")
-        return False
-
+    return updated_cookie
 def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
     try:
