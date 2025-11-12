@@ -372,7 +372,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             if data.get('errcode') == -2012:
                 print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
                 # 直接刷新Cookie
-                new_cookie = refresh_session(wx_cookie)
+                new_cookie = refresh_session_simple(wx_cookie)
                 if new_cookie == wx_cookie:
                     print("🔄 Cookie未更新,跳过重试")
                     return [], []
@@ -427,7 +427,7 @@ def get_review_list(session,bookId,wx_cookie):
             print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
              # 直接刷新Cookie
         
-            new_cookie = refresh_session(wx_cookie)
+            new_cookie = refresh_session_simple(wx_cookie)
             if new_cookie == wx_cookie:
                 print("🔄 Cookie未更新,跳过重试")
                 return [], []
@@ -762,6 +762,55 @@ def refresh_session(current_cookie):
             print(f"❌ 访问 {url} 失败: {e}")
     
     return updated_cookie
+
+def refresh_session_simple(current_cookie):
+    """刷新微信读书会话 - 使用Session自动处理Cookie"""
+    print("🔄 正在刷新微信读书会话...")
+    
+    urls_to_visit = [
+        'https://weread.qq.com/',
+        'https://weread.qq.com/web/shelf',
+    ]
+    
+    # 创建新的Session，让requests自动处理Cookie
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    })
+    
+    # 使用原始Cookie初始化
+    for cookie_item in current_cookie.split('; '):
+        if '=' in cookie_item:
+            key, value = cookie_item.split('=', 1)
+            session.cookies.set(key.strip(), value.strip())
+    
+    for url in urls_to_visit:
+        try:
+            print(f"🔍 访问: {url}")
+            response = session.get(url, timeout=10, allow_redirects=True)
+            print(f"   状态: {response.status_code}")
+            time.sleep(0.3)
+        except Exception as e:
+            print(f"   访问失败: {e}")
+    
+    # 从Session中提取更新后的Cookie
+    new_cookie = '; '.join([f"{c.name}={c.value}" for c in session.cookies])
+    
+    if new_cookie != current_cookie:
+        print("✅ Cookie刷新成功")
+        # 显示具体更新的字段
+        old_cookies = {item.split('=')[0]: item.split('=')[1] for item in current_cookie.split('; ') if '=' in item}
+        new_cookies = {item.split('=')[0]: item.split('=')[1] for item in new_cookie.split('; ') if '=' in item}
+        
+        for key in new_cookies:
+            if key not in old_cookies:
+                print(f"📝 新增字段: {key}")
+            elif old_cookies[key] != new_cookies[key]:
+                print(f"📝 更新字段: {key} (旧值: {old_cookies[key]}, 新值: {new_cookies[key]})")
+    else:
+        print("ℹ️ Cookie未更新")
+    
+    return new_cookie
 def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
     try:
