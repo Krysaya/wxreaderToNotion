@@ -764,12 +764,12 @@ def refresh_session_simple(session,current_cookie):
     try:
         # 第一步：访问主页
         print("🔍 访问: https://weread.qq.com/")
-        home_resp = session.get("https://weread.qq.com/", timeout=10,headers=get_headers)
+        home_resp = session.get("https://weread.qq.com/", timeout=10)
         print(f"   状态: {home_resp.status_code}")
         
         # 第二步：访问书架
         print("🔍 访问: https://weread.qq.com/web/shelf")  
-        shelf_resp = session.get("https://weread.qq.com/web/shelf", timeout=10,headers=get_headers)
+        shelf_resp = session.get("https://weread.qq.com/web/shelf", timeout=10)
         print(f"   状态: {shelf_resp.status_code}")
         
         
