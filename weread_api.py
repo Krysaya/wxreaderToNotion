@@ -715,8 +715,8 @@ def update_cookie_from_response(current_cookie, response_cookies):
 def refresh_session_simple(current_cookie):
     """增强版cookie刷新 - 参考cookie合并逻辑"""
     print("🔄 正在刷新微信读书会话...")
-    session = requests.Session()
-
+  # 不清空重新创建，而是清空cookies重用session
+    session.cookies.clear()
     try:
         # 第一步：访问主页
         print("🔍 访问: https://weread.qq.com/")
