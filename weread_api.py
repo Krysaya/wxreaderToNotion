@@ -373,8 +373,11 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
                 # 直接刷新Cookie
                 new_cookie = refresh_session(wx_cookie)
-                # 递归重试
-                return get_bookmark_list(session,bookId, new_cookie)
+                if new_cookie == wx_cookie
+                    return [], []
+                else
+                    # 递归重试
+                    return get_bookmark_list(session,bookId, new_cookie)
             else:
                 print(f"❌ 其他授权错误: {data}")
                 return [], []
@@ -424,8 +427,11 @@ def get_review_list(session,bookId,wx_cookie):
              # 直接刷新Cookie
         
             new_cookie = refresh_session(wx_cookie)
-            # 递归重试
-            return get_review_list(session,bookId,new_cookie)
+            if new_cookie == wx_cookie
+                return [], []
+            else
+                # 递归重试
+                return get_review_list(session,bookId,new_cookie)
         
         else:
             print(f"❌ 未授权错误: {response.status_code} - {data}")
@@ -734,7 +740,7 @@ def refresh_session(current_cookie):
             
             # 检查是否有新Cookie
             if 'set-cookie' in response.headers:
-                set_cookie_headers = response.headers.get_list('set-cookie')
+                set_cookie_headers = response.headers.get('set-cookie')
                 if set_cookie_headers:
                     print("🔄 服务端返回了新的Cookie")
                     updated_cookie = update_cookie_from_response(updated_cookie, set_cookie_headers)
