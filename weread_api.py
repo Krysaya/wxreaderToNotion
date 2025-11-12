@@ -695,10 +695,10 @@ def add_children(page_id, children, notion_token):
         print(f"❌ 添加子内容时出错: {e}")
         return None
 def update_cookie_from_response(current_cookie, response_cookies):
-    """合并新旧Cookie - 参考项目的核心逻辑"""
+    """合并新旧Cookie"""
     # 解析当前Cookie
     cookie_dict = {}
-    if current_cookie:
+    if current_cookie and isinstance(current_cookie, str):
         for pair in current_cookie.split('; '):
             if '=' in pair:
                 name, value = pair.split('=', 1)
