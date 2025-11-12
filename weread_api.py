@@ -333,6 +333,8 @@ def get_bookshelf(session):
 
 def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
+    print(f"=====Cookie: {new_cookie}")
+
     try:
         url = WEREAD_BOOKMARKLIST_URL
         params = {
