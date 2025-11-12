@@ -344,6 +344,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             'Origin': 'https://weread.qq.com',
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Cookie':wx_cookie,
         }
         
         print(f"🔍 调试 - 请求划线列表: {url}")
@@ -406,7 +407,9 @@ def get_review_list(session,bookId,wx_cookie):
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
         'Referer': 'https://weread.qq.com/',
-        'Origin': 'https://weread.qq.com'
+        'Origin': 'https://weread.qq.com',
+        'Cookie':wx_cookie,
+
     }
     
     response = session.get(url, params=params, headers=headers)
