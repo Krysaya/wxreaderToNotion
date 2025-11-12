@@ -27,6 +27,34 @@ def parse_cookie_string(cookie_string):
             cookie_dict[key] = value
     return cookie_dict
 
+# API header模板 - 用于获取笔记、划线等API调用
+def get_headers(cookie_str):
+    return {
+        'Cookie': cookie_str,
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        'Referer': 'https://weread.qq.com/web/shelf',
+        'Origin': 'https://weread.qq.com',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    }
+
+# API header模板 - 用于获取笔记、划线等API调用
+def get_api_headers(cookie_str, bookId):
+    return {
+        'Cookie': cookie_str,
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
+        'Referer': f'https://weread.qq.com/web/reader/{bookId}',
+        'Origin': 'https://weread.qq.com',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'sec-ch-ua':'"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+        'sec-ch-ua-mobile':'?0',
+        'sec-ch-ua-platform':'macOS',
+        'sec-fetch-dest':'empty',
+        'sec-fetch-mode':'cors',
+        'sec-fetch-site':'same-origin',
+        
+    }
 # 通用的Notion API请求函数
 def notion_api_request(method, endpoint, payload=None, notion_token=None, timeout=30):
     """通用的Notion API请求函数 - 强制显示错误详情"""
@@ -353,14 +381,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
         params = {
             'bookId': bookId,
         }
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': f'https://weread.qq.com/web/reader/{bookId}',
-            'Origin': 'https://weread.qq.com',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-            'Cookie': cookie_str
-        }                
+        headers = get_api_headers(cookie_str,bookId)           
         response = session.get(url, params=params, headers=headers, timeout=30)
         
         if response.status_code == 200:
@@ -428,16 +449,8 @@ def get_review_list(session,bookId,wx_cookie):
         'listMode': 0
     }
     # 使用参考项目的完整请求头
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
-        'Referer': 'https://weread.qq.com/',
-        'Origin': 'https://weread.qq.com',
-        'Cookie': cookie_str
+    headers = get_api_headers(cookie_str,bookId)           
 
-    }
-    
     response = session.get(url, params=params, headers=headers)
     if response.status_code == 200:
         data = response.json()
@@ -751,12 +764,12 @@ def refresh_session_simple(session,current_cookie):
     try:
         # 第一步：访问主页
         print("🔍 访问: https://weread.qq.com/")
-        home_resp = session.get("https://weread.qq.com/", timeout=10)
+        home_resp = session.get("https://weread.qq.com/", timeout=10,headers=get_headers)
         print(f"   状态: {home_resp.status_code}")
         
         # 第二步：访问书架
         print("🔍 访问: https://weread.qq.com/web/shelf")  
-        shelf_resp = session.get("https://weread.qq.com/web/shelf", timeout=10)
+        shelf_resp = session.get("https://weread.qq.com/web/shelf", timeout=10,headers=get_headers)
         print(f"   状态: {shelf_resp.status_code}")
         
         
@@ -808,14 +821,7 @@ def main(weread_token, notion_token, database_id):
         session = requests.Session()
         session.cookies.update(parse_cookie_string(weread_token))
         
-        # 设置微信读书请求头
-        session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-            'Referer': 'https://weread.qq.com/',
-            'Origin': 'https://weread.qq.com',
-        })
+
         # 原有的同步逻辑，但现在数据获取函数会自己处理Cookie刷新
         latest_sort = get_sort(database_id, notion_token)
         if latest_sort is None:
