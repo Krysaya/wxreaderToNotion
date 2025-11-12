@@ -346,6 +346,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
     else:
         # 已经是字符串
         cookie_str = wx_cookie
+    print(f"🔍 调试2222bm - wx_cookie类型: {type(cookie_str)}")
 
     try:
         url = WEREAD_BOOKMARKLIST_URL
