@@ -694,123 +694,80 @@ def add_children(page_id, children, notion_token):
     except Exception as e:
         print(f"❌ 添加子内容时出错: {e}")
         return None
-
-def update_cookie_from_response(current_cookie, set_cookie_headers):
-    """从响应头更新Cookie"""
-    print(f"🔄 更新Cookie字段当前ck头: {set_cookie_headers}")
-
-    cookie_dict = {}
-    
+def update_cookie_from_response(current_cookie, response_cookies):
+    """合并新旧Cookie - 参考项目的核心逻辑"""
     # 解析当前Cookie
-    for item in current_cookie.split('; '):
-        if '=' in item:
-            key, value = item.split('=', 1)
-            cookie_dict[key.strip()] = value
+    cookie_dict = {}
+    if current_cookie:
+        for pair in current_cookie.split('; '):
+            if '=' in pair:
+                name, value = pair.split('=', 1)
+                cookie_dict[name] = value
     
-    # 更新新Cookie
-    for set_cookie in set_cookie_headers:
-        # 取第一个分号前的内容
-        cookie_parts = set_cookie.split(';')[0].strip()
-        if '=' in cookie_parts:
-            key, value = cookie_parts.split('=', 1)
-            key = key.strip()
-            if key:  # 确保键名不为空
-                cookie_dict[key] = value
-                print(f"🔄 更新Cookie字段: {key}")
-            else:
-                print(f"⚠️ 跳过空的Cookie键名")
-        else:
-            print(f"⚠️ 无效的Cookie格式: {cookie_parts}")
+    # 更新为新的Cookie值
+    for cookie_dict_item in response_cookies:
+        for name, value in cookie_dict_item.items():
+            cookie_dict[name] = value
     
     # 重新构建Cookie字符串
-    new_cookie = '; '.join([f"{k}={v}" for k, v in cookie_dict.items()])
-    return new_cookie
-
-def refresh_session(current_cookie):
-    """刷新微信读书会话"""
-    print("🔄 正在刷新微信读书会话...")
-    
-    urls_to_visit = [
-        'https://weread.qq.com/',  # 首页
-        'https://weread.qq.com/web/shelf',  # 书架页
-    ]
-    
-    updated_cookie = current_cookie
-    
-    for url in urls_to_visit:
-        try:
-            print(f"🔍 访问: {url}")
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Cookie': updated_cookie,
-                'Referer': 'https://weread.qq.com/',
-            }
-            
-            response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
-            print(f"刷新cookie返回的header: {response.headers}")
-
-            # 检查是否有新Cookie
-            if 'set-cookie' in response.headers:
-                set_cookie_headers = response.headers.get('set-cookie')
-                if set_cookie_headers:
-                    print("🔄 服务端返回了新的Cookie")
-                    updated_cookie = update_cookie_from_response(updated_cookie, set_cookie_headers)
-            
-            time.sleep(0.3)
-            
-        except Exception as e:
-            print(f"❌ 访问 {url} 失败: {e}")
-    
-    return updated_cookie
+    return '; '.join([f"{name}={value}" for name, value in cookie_dict.items()])
 
 def refresh_session_simple(current_cookie):
-    """刷新微信读书会话 - 使用Session自动处理Cookie"""
+    """增强版cookie刷新 - 参考cookie合并逻辑"""
     print("🔄 正在刷新微信读书会话...")
-    
-    urls_to_visit = [
-        'https://weread.qq.com/',
-        'https://weread.qq.com/web/shelf',
-    ]
-    
-    # 创建新的Session，让requests自动处理Cookie
     session = requests.Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    })
-    
-    # 使用原始Cookie初始化
-    for cookie_item in current_cookie.split('; '):
-        if '=' in cookie_item:
-            key, value = cookie_item.split('=', 1)
-            session.cookies.set(key.strip(), value.strip())
-    
-    for url in urls_to_visit:
-        try:
-            print(f"🔍 访问: {url}")
-            response = session.get(url, timeout=10, allow_redirects=True)
-            print(f"   状态: {response.status_code}")
-            time.sleep(0.3)
-        except Exception as e:
-            print(f"   访问失败: {e}")
-    
-    # 从Session中提取更新后的Cookie
-    new_cookie = '; '.join([f"{c.name}={c.value}" for c in session.cookies])
-    
-    if new_cookie != current_cookie:
-        print("✅ Cookie刷新成功")
-        # 显示具体更新的字段
-        old_cookies = {item.split('=')[0]: item.split('=')[1] for item in current_cookie.split('; ') if '=' in item}
+
+    try:
+        # 第一步：访问主页
+        print("🔍 访问: https://weread.qq.com/")
+        home_resp = session.get("https://weread.qq.com/", timeout=10)
+        print(f"   状态: {home_resp.status_code}")
+        
+        # 第二步：访问书架
+        print("🔍 访问: https://weread.qq.com/web/shelf")  
+        shelf_resp = session.get("https://weread.qq.com/web/shelf", timeout=10)
+        print(f"   状态: {shelf_resp.status_code}")
+        
+        # 第三步：访问书籍列表
+        book_list_url = "https://weread.qq.com/web/book/list"
+        print("🔍 访问: https://weread.qq.com/web/book/list")
+        book_resp = session.get(book_list_url, timeout=10)
+        print(f"   状态: {book_resp.status_code}")
+
+        # 获取所有响应中的cookie
+        all_response_cookies = []
+        for resp in [home_resp, shelf_resp, book_resp]:
+            if resp.cookies:
+                all_response_cookies.append(resp.cookies.get_dict())
+        
+        # 合并cookie
+        new_cookie = update_cookie_from_response(current_cookie, all_response_cookies)
+        
+        # 比较cookie变化
+        old_cookies = {item.split('=')[0]: item.split('=')[1] for item in current_cookie.split('; ') if '=' in item} if current_cookie else {}
         new_cookies = {item.split('=')[0]: item.split('=')[1] for item in new_cookie.split('; ') if '=' in item}
         
+        has_changes = False
         for key in new_cookies:
             if key not in old_cookies:
                 print(f"📝 新增字段: {key}")
+                has_changes = True
             elif old_cookies[key] != new_cookies[key]:
                 print(f"📝 更新字段: {key} (旧值: {old_cookies[key]}, 新值: {new_cookies[key]})")
-    else:
-        print("ℹ️ Cookie未更新")
-    
-    return new_cookie
+                has_changes = True
+        
+        if not has_changes:
+            print("ℹ️ Cookie未更新")
+            return False, session, current_cookie
+            
+        print("✅ Cookie刷新成功")
+        return True, session, new_cookie
+        
+    except Exception as e:
+        print(f"❌ 刷新会话异常: {e}")
+        return False, session, current_cookie
+
+
 def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
     try:
