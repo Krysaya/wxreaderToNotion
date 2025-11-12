@@ -331,7 +331,7 @@ def get_bookshelf(session):
         print(f"获取书架时出错: {e}")
         return None
 
-def get_bookmark_list(session,bookId):
+def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
     try:
         url = WEREAD_BOOKMARKLIST_URL
@@ -372,7 +372,7 @@ def get_bookmark_list(session,bookId):
             if data.get('errcode') == -2012:
                 print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
                 # 直接刷新Cookie
-                new_cookie = refresh_session(current_cookie)
+                new_cookie = refresh_session(wx_cookie)
                 # 递归重试
                 return get_bookmark_list(bookId, new_cookie)
             else:
@@ -386,7 +386,7 @@ def get_bookmark_list(session,bookId):
         print(f"❌ 获取划线异常: {e}")
         return None
 
-def get_review_list(session,bookId):
+def get_review_list(session,bookId,wx_cookie):
     """获取笔记列表 - 使用正确的API端点"""
     url = f"https://i.weread.qq.com/review/list"
     params = {
@@ -423,7 +423,7 @@ def get_review_list(session,bookId):
             print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
              # 直接刷新Cookie
         
-            new_cookie = refresh_session(current_cookie)
+            new_cookie = refresh_session(wx_cookie)
             # 递归重试
             return get_review_list(session,bookId)
         
@@ -809,10 +809,10 @@ def main(weread_token, notion_token, database_id):
                     # chapter = get_chapter_info(session,book_id)
                     
                     print(f"📝 获取划线列表...")
-                    bookmark_list = get_bookmark_list(session,book_id)
+                    bookmark_list = get_bookmark_list(session,book_id,weread_token)
                     
                     print(f"💭 获取笔记和评论...")
-                    summary, reviews = get_review_list(session,book_id)
+                    summary, reviews = get_review_list(session,book_id,weread_token)
                     # bookmark_list.extend(reviews)
                     
                     # 排序内容
