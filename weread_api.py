@@ -376,7 +376,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 if new_cookie == wx_cookie:
                     print("🔄 Cookie未更新,跳过重试")
                     return [], []
-                else
+                else:
                     # 递归重试
                     return get_bookmark_list(session,bookId, new_cookie)
             else:
@@ -431,7 +431,7 @@ def get_review_list(session,bookId,wx_cookie):
             if new_cookie == wx_cookie:
                 print("🔄 Cookie未更新,跳过重试")
                 return [], []
-            else
+            else:
                 # 递归重试
                 return get_review_list(session,bookId,new_cookie)
         
