@@ -372,7 +372,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             if data.get('errcode') == -2012:
                 print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
                 # 直接刷新Cookie
-                new_cookie = refresh_session_simple(wx_cookie)
+                new_cookie = refresh_session_simple(session,wx_cookie)
                 if new_cookie == wx_cookie:
                     print("🔄 Cookie未更新,跳过重试")
                     return [], []
@@ -427,7 +427,7 @@ def get_review_list(session,bookId,wx_cookie):
             print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
              # 直接刷新Cookie
         
-            new_cookie = refresh_session_simple(wx_cookie)
+            new_cookie = refresh_session_simple(session,wx_cookie)
             if new_cookie == wx_cookie:
                 print("🔄 Cookie未更新,跳过重试")
                 return [], []
@@ -712,7 +712,7 @@ def update_cookie_from_response(current_cookie, response_cookies):
     # 重新构建Cookie字符串
     return '; '.join([f"{name}={value}" for name, value in cookie_dict.items()])
 
-def refresh_session_simple(current_cookie):
+def refresh_session_simple(session,current_cookie):
     """增强版cookie刷新 - 参考cookie合并逻辑"""
     print("🔄 正在刷新微信读书会话...")
   # 不清空重新创建，而是清空cookies重用session
