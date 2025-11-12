@@ -345,12 +345,8 @@ def get_bookmark_list(session,bookId,wx_cookie):
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
             'Cookie':wx_cookie,
-        }
-        
-        print(f"🔍 调试 - 请求划线列表: {url}")
-        
+        }                
         response = session.get(url, params=params, headers=headers, timeout=30)
-        print(f"🔍 调试 - 响应状态: {response.status_code}")
         
         if response.status_code == 200:
             data = response.json()
@@ -374,6 +370,8 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
                 # 直接刷新Cookie
                 new_cookie = refresh_session_simple(session,wx_cookie)
+                print(f"🔄 新Cookie: {new_cookie}")
+                print(f"🔄 旧Cookie: {wx_cookie}")
                 if new_cookie == wx_cookie:
                     print("🔄 Cookie未更新,跳过重试")
                     return [], []
@@ -408,7 +406,7 @@ def get_review_list(session,bookId,wx_cookie):
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
         'Referer': 'https://weread.qq.com/',
         'Origin': 'https://weread.qq.com',
-        'Cookie':wx_cookie,
+        'Cookie': wx_cookie,
 
     }
     
@@ -431,6 +429,8 @@ def get_review_list(session,bookId,wx_cookie):
              # 直接刷新Cookie
         
             new_cookie = refresh_session_simple(session,wx_cookie)
+
+
             if new_cookie == wx_cookie:
                 print("🔄 Cookie未更新,跳过重试")
                 return [], []
@@ -749,17 +749,17 @@ def refresh_session_simple(session,current_cookie):
         has_changes = False
         for key in new_cookies:
             if key not in old_cookies:
-                print(f"📝 新增字段: {key}")
+                # print(f"📝 新增字段: {key}")
                 has_changes = True
             elif old_cookies[key] != new_cookies[key]:
-                print(f"📝 更新字段: {key} (旧值: {old_cookies[key]}, 新值: {new_cookies[key]})")
+                # print(f"📝 更新字段: {key} (旧值: {old_cookies[key]}, 新值: {new_cookies[key]})")
                 has_changes = True
         
         if not has_changes:
             print("ℹ️ Cookie未更新")
             return False, session, current_cookie
             
-        print("✅ Cookie刷新成功")
+        print(f"✅ Cookie刷新成功: {new_cookie}")
         return True, session, new_cookie
         
     except Exception as e:
@@ -894,7 +894,7 @@ def main(weread_token, notion_token, database_id):
                     
                     # 获取划线列表
                     print(f"📝 获取划线列表...")
-                    bookmark_list = get_bookmark_list(session,book_id)
+                    bookmark_list = get_bookmark_list(session,book_id,weread_token)
                     if bookmark_list is None:
                         print(f"❌ 获取划线列表失败: {title}")
                         error_count += 1
@@ -905,7 +905,7 @@ def main(weread_token, notion_token, database_id):
                     
                     # 获取笔记和评论
                     print(f"💭 获取笔记和评论...")
-                    summary, reviews = get_review_list(session,book_id)
+                    summary, reviews = get_review_list(session,book_id,weread_token)
                     # bookmark_list.extend(reviews)
                     
                     # 排序内容
