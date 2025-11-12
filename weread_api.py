@@ -697,6 +697,8 @@ def add_children(page_id, children, notion_token):
 
 def update_cookie_from_response(current_cookie, set_cookie_headers):
     """从响应头更新Cookie"""
+    print(f"🔄 更新Cookie字段当前ck头: {set_cookie_headers}")
+
     cookie_dict = {}
     
     # 解析当前Cookie
@@ -711,8 +713,14 @@ def update_cookie_from_response(current_cookie, set_cookie_headers):
         cookie_parts = set_cookie.split(';')[0].strip()
         if '=' in cookie_parts:
             key, value = cookie_parts.split('=', 1)
-            cookie_dict[key.strip()] = value
-            print(f"🔄 更新Cookie字段: {key.strip()}")
+            key = key.strip()
+            if key:  # 确保键名不为空
+                cookie_dict[key] = value
+                print(f"🔄 更新Cookie字段: {key}")
+            else:
+                print(f"⚠️ 跳过空的Cookie键名")
+        else:
+            print(f"⚠️ 无效的Cookie格式: {cookie_parts}")
     
     # 重新构建Cookie字符串
     new_cookie = '; '.join([f"{k}={v}" for k, v in cookie_dict.items()])
@@ -739,7 +747,8 @@ def refresh_session(current_cookie):
             }
             
             response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
-            
+            print(f"刷新cookie返回的header: {response.headers}")
+
             # 检查是否有新Cookie
             if 'set-cookie' in response.headers:
                 set_cookie_headers = response.headers.get('set-cookie')
