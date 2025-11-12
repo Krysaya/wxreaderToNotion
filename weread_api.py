@@ -334,6 +334,16 @@ def get_bookshelf(session):
 def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
     print(f"=====Cookie: {wx_cookie}")
+    # 统一处理cookie格式
+    if isinstance(wx_cookie, tuple):
+        # 从tuple中提取cookie字符串
+        cookie_str = wx_cookie[2] if len(wx_cookie) > 2 else str(wx_cookie)
+    elif isinstance(wx_cookie, dict):
+        # 从字典转换为字符串
+        cookie_str = '; '.join([f"{k}={v}" for k, v in wx_cookie.items()])
+    else:
+        # 已经是字符串
+        cookie_str = wx_cookie
 
     try:
         url = WEREAD_BOOKMARKLIST_URL
@@ -346,7 +356,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             'Origin': 'https://weread.qq.com',
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-            'Cookie': wx_cookie
+            'Cookie': cookie_str
         }                
         response = session.get(url, params=params, headers=headers, timeout=30)
         
