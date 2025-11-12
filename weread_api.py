@@ -370,10 +370,11 @@ def get_bookmark_list(session,bookId,wx_cookie):
             # 状态码401表示未授权
             data = response.json()
             if data.get('errcode') == -2012:
-                print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
+                print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
                 # 直接刷新Cookie
                 new_cookie = refresh_session(wx_cookie)
-                if new_cookie == wx_cookie
+                if new_cookie == wx_cookie:
+                    print("🔄 Cookie未更新,跳过重试")
                     return [], []
                 else
                     # 递归重试
@@ -427,7 +428,8 @@ def get_review_list(session,bookId,wx_cookie):
              # 直接刷新Cookie
         
             new_cookie = refresh_session(wx_cookie)
-            if new_cookie == wx_cookie
+            if new_cookie == wx_cookie:
+                print("🔄 Cookie未更新,跳过重试")
                 return [], []
             else
                 # 递归重试
