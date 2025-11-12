@@ -346,7 +346,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             'Origin': 'https://weread.qq.com',
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-            'Cookie': parse_cookie_string(wx_cookie),
+            'Cookie': wx_cookie
         }                
         response = session.get(url, params=params, headers=headers, timeout=30)
         
@@ -408,7 +408,7 @@ def get_review_list(session,bookId,wx_cookie):
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
         'Referer': 'https://weread.qq.com/',
         'Origin': 'https://weread.qq.com',
-        'Cookie': parse_cookie_string(wx_cookie),
+        'Cookie': wx_cookie
 
     }
     
