@@ -780,6 +780,7 @@ def refresh_session_simple(session,current_cookie):
             # 提取tuple中的cookie字符串   
 
         print(f"✅ Cookie刷新成功: {new_cookie}")
+        print(f"刷新 - wx_cookie类型: {type(new_cookie)}")
 
         return True, session, new_cookie
         
