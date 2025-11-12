@@ -334,6 +334,8 @@ def get_bookshelf(session):
 def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
     print(f"=====Cookie: {wx_cookie}")
+    print(f"🔍 调试bm - wx_cookie类型: {type(wx_cookie)}")
+
     # 统一处理cookie格式
     if isinstance(wx_cookie, tuple):
         # 从tuple中提取cookie字符串
@@ -403,6 +405,8 @@ def get_bookmark_list(session,bookId,wx_cookie):
 
 def get_review_list(session,bookId,wx_cookie):
     """获取笔记列表 - 使用正确的API端点"""
+    print(f"🔍 调试rw - wx_cookie类型: {type(wx_cookie)}")
+
     url = f"https://i.weread.qq.com/review/list"
     params = {
         'bookId': bookId,
@@ -770,8 +774,11 @@ def refresh_session_simple(session,current_cookie):
         if not has_changes:
             print("ℹ️ Cookie未更新")
             return False, session, current_cookie
-            
+            # 在返回前确保cookie是字符串
+        if isinstance(new_cookie, tuple):
+        new_cookie = new_cookie[2]  # 提取tuple中的cookie字符串    
         print(f"✅ Cookie刷新成功: {new_cookie}")
+
         return True, session, new_cookie
         
     except Exception as e:
