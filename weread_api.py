@@ -374,7 +374,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 # 直接刷新Cookie
                 new_cookie = refresh_session(wx_cookie)
                 # 递归重试
-                return get_bookmark_list(bookId, new_cookie)
+                return get_bookmark_list(session,bookId, new_cookie)
             else:
                 print(f"❌ 其他授权错误: {data}")
                 return [], []
@@ -425,7 +425,7 @@ def get_review_list(session,bookId,wx_cookie):
         
             new_cookie = refresh_session(wx_cookie)
             # 递归重试
-            return get_review_list(session,bookId)
+            return get_review_list(session,bookId,new_cookie)
         
         else:
             print(f"❌ 未授权错误: {response.status_code} - {data}")
