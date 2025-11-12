@@ -362,6 +362,8 @@ def get_bookshelf(session):
 def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
     print(f"=====Cookie: {wx_cookie}")
+    print(f"🔍 Session headers状态: {dict(session.headers)}")
+
     print(f"🔍 调试bm - wx_cookie类型: {type(wx_cookie)}")
 
     # 统一处理cookie格式
@@ -380,6 +382,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
         url = WEREAD_BOOKMARKLIST_URL
         params = {
             'bookId': bookId,
+            'synckey':'0'
         }
         headers = get_api_headers(cookie_str,bookId)           
         response = session.get(url, params=params, headers=headers, timeout=30)
@@ -399,24 +402,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 'chapters': chapters,
                 'bookmarks': bookmarks
             }
-        elif response.status_code == 401:
-            # 状态码401表示未授权
-            data = response.json()
-            if data.get('errcode') == -2012:
-                print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
-                # 直接刷新Cookie
-                new_cookie = refresh_session_simple(session,wx_cookie)
-                print(f"🔄 新Cookie: {new_cookie}")
-                print(f"🔄 旧Cookie: {wx_cookie}")
-                if new_cookie == wx_cookie:
-                    print("🔄 Cookie未更新,跳过重试")
-                    return [], []
-                else:
-                    # 递归重试
-                    return get_bookmark_list(session,bookId, new_cookie)
-            else:
-                print(f"❌ 其他授权错误: {data}")
-                return [], []
+        
         else:
             print(f"❌ 获取划线失败: {response.status_code}")
             return None
@@ -759,8 +745,6 @@ def update_cookie_from_response(current_cookie, response_cookies):
 def refresh_session_simple(session,current_cookie):
     """增强版cookie刷新 - 参考cookie合并逻辑"""
     print("🔄 正在刷新微信读书会话...")
-  # 不清空重新创建，而是清空cookies重用session
-
     try:
         # 第一步：访问主页
         print("🔍 访问: https://weread.qq.com/")
