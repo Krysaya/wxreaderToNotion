@@ -776,7 +776,8 @@ def refresh_session_simple(session,current_cookie):
             return False, session, current_cookie
             # 在返回前确保cookie是字符串
         if isinstance(new_cookie, tuple):
-        new_cookie = new_cookie[2]  # 提取tuple中的cookie字符串    
+            new_cookie = new_cookie[2]  # 提取tuple中的cookie字符串   
+             
         print(f"✅ Cookie刷新成功: {new_cookie}")
 
         return True, session, new_cookie
