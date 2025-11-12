@@ -407,6 +407,17 @@ def get_bookmark_list(session,bookId,wx_cookie):
 def get_review_list(session,bookId,wx_cookie):
     """获取笔记列表 - 使用正确的API端点"""
     print(f"🔍 调试rw - wx_cookie类型: {type(wx_cookie)}")
+    # 统一处理cookie格式
+    if isinstance(wx_cookie, tuple):
+        # 从tuple中提取cookie字符串
+        cookie_str = wx_cookie[2] if len(wx_cookie) > 2 else str(wx_cookie)
+    elif isinstance(wx_cookie, dict):
+        # 从字典转换为字符串
+        cookie_str = '; '.join([f"{k}={v}" for k, v in wx_cookie.items()])
+    else:
+        # 已经是字符串
+        cookie_str = wx_cookie
+    print(f"🔍 调试2222bm - wx_cookie类型: {type(cookie_str)}")
 
     url = f"https://i.weread.qq.com/review/list"
     params = {
@@ -423,7 +434,7 @@ def get_review_list(session,bookId,wx_cookie):
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
         'Referer': 'https://weread.qq.com/',
         'Origin': 'https://weread.qq.com',
-        'Cookie': wx_cookie
+        'Cookie': cookie_str
 
     }
     
