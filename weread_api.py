@@ -49,7 +49,7 @@ def create_weread_session(cookie):
 # API header模板 - 用于获取笔记、划线等API调用
 def get_headers(cookie_str):
     return {
-        'Cookie': cookie_str,
+        # 'Cookie': cookie_str,
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
         'Referer': 'https://weread.qq.com/web/shelf',
         'Origin': 'https://weread.qq.com',
@@ -66,12 +66,12 @@ def get_api_headers(cookie_str, bookId):
         'Origin': 'https://weread.qq.com',
         'Accept': 'application/json, text/plain, */*',
         'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        'sec-ch-ua':'"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
-        'sec-ch-ua-mobile':'?0',
-        'sec-ch-ua-platform':'macOS',
-        'sec-fetch-dest':'empty',
-        'sec-fetch-mode':'cors',
-        'sec-fetch-site':'same-origin',
+        'Sec-Ch-Ua':'"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+        'Sec-Ch-Ua-Mobile':'?0',
+        'Sec-Ch-Ua-Platform':'"macOS"',
+        'Sec-Fetch-Dest':'empty',
+        'Sec-Fetch-Mode':'cors',
+        'Sec-Fetch-Site':'same-origin',
         
     }
 # 通用的Notion API请求函数
@@ -381,24 +381,10 @@ def get_bookshelf(session):
 def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
 
-    # # 统一处理cookie格式
-    # if isinstance(wx_cookie, tuple):
-    #     # 从tuple中提取cookie字符串
-    #     cookie_str = wx_cookie[2] if len(wx_cookie) > 2 else str(wx_cookie)
-    # elif isinstance(wx_cookie, dict):
-    #     # 从字典转换为字符串
-    #     cookie_str = '; '.join([f"{k}={v}" for k, v in wx_cookie.items()])
-    # else:
-    #     # 已经是字符串
-    #     cookie_str = wx_cookie
-    # print(f"🔍 调试2222bm - wx_cookie类型: {type(cookie_str)}")
-
     try:
         url = WEREAD_BOOKMARKLIST_URL
         params = {
             'bookId': bookId,
-            'count' : 500,
-            'offset': 0,
             'synckey':'0'
         }
         # headers = get_api_headers(cookie_str,bookId)           
@@ -446,10 +432,8 @@ def get_review_list(session,bookId,wx_cookie):
     url = f"https://weread.qq.com/review/list"
     params = {
         'bookId': bookId,
-        'listType': 11,
-        'mine': 1,
         'synckey': 0,
-        'listMode': 0
+
     }
     # 使用参考项目的完整请求头
     # headers = get_api_headers(cookie_str,bookId)           
@@ -490,35 +474,6 @@ def get_review_list(session,bookId,wx_cookie):
         print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
         return [], []
 
-def get_book_highlights_v2(session,bookId):
-    """获取书籍笔记和划线（新版API）"""
-    url = "https://weread.qq.com/book/highlights"
-    params = {
-        "bookId": bookId,
-        "count": 500,
-        "offset": 0
-    }
-    # 使用完整的Cookie（包含用户信息）
-    full_cookie = "wr_fp=457906278; wr_gid=208560242; wr_vid=6417652; wr_skey=iKzzJOjR; wr_pf=0; wr_rt=web%40hnI6K8e_JEVHycmjfl2_AL; wr_ql=0; wr_localvid=9ec32370661ecf49ec43dc6; wr_name=%E4%BD%95%E8%89%B2%E7%9B%B8%E6%92%A9%E6%88%91%E5%BF%83%E5%BC%A6; wr_avatar=https%3A%2F%2Fthirdwx.qlogo.cn%2Fmmopen%2Fvi_32%2FDYAIOgq83epjnpEZ0B4SAuf3Zlce6m0mfEWjI0WHJlLlpGfTiaoo0rcxeiao1duwdcNkcvqteKqA8j1cqv9rEuVQ%2F132; wr_gender=2"
-    
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Cookie": full_cookie,  # 使用完整Cookie
-        "Referer": f"https://weread.qq.com/web/reader/{bookId}",
-        "Origin": "https://weread.qq.com"
-    }
-    
-    print(f"🔍 请求新版笔记API: {url}")
-    response = session.get(url, params=params,headers=headers)
-    print(f"🔍 响应状态: {response.status_code}")
-    
-    if response.status_code == 200:
-        data = response.json()
-        print(f"✅ 成功获取新版笔记数据")
-        return data
-    else:
-        print(f"❌ 获取新版笔记失败: {response.status_code} - {response.text[:200]}")
-        return None
 
 def get_bookinfo(session,bookId):
     """获取书籍信息 - 使用正确的API端点"""
@@ -904,7 +859,7 @@ def main(weread_token, notion_token, database_id):
                     
                     print(f"📝 获取划线列表...")
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)
-                    bookmark_list2 = get_book_highlights_v2(session,book_id)
+                    # bookmark_list2 = get_book_highlights_v2(session,book_id)
 
                     print(f"💭 获取笔记和评论...")
                     summary, reviews = get_review_list(session,book_id,weread_token)
