@@ -27,6 +27,25 @@ def parse_cookie_string(cookie_string):
             cookie_dict[key] = value
     return cookie_dict
 
+def create_weread_session(cookie):
+    """创建微信读书会话"""
+    session = requests.Session()
+    session.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://weread.qq.com/",
+        "Origin": "https://weread.qq.com"
+    })
+    
+    # 设置Cookie
+    cookie_dict = {}
+    for item in cookie.split(';'):
+        if '=' in item:
+            key, value = item.strip().split('=', 1)
+            cookie_dict[key] = value
+    session.cookies.update(cookie_dict)
+    
+    return session
+
 # API header模板 - 用于获取笔记、划线等API调用
 def get_headers(cookie_str):
     return {
@@ -361,22 +380,18 @@ def get_bookshelf(session):
 
 def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
-    print(f"=====Cookie: {wx_cookie}")
-    print(f"🔍 Session headers状态: {dict(session.headers)}")
 
-    print(f"🔍 调试bm - wx_cookie类型: {type(wx_cookie)}")
-
-    # 统一处理cookie格式
-    if isinstance(wx_cookie, tuple):
-        # 从tuple中提取cookie字符串
-        cookie_str = wx_cookie[2] if len(wx_cookie) > 2 else str(wx_cookie)
-    elif isinstance(wx_cookie, dict):
-        # 从字典转换为字符串
-        cookie_str = '; '.join([f"{k}={v}" for k, v in wx_cookie.items()])
-    else:
-        # 已经是字符串
-        cookie_str = wx_cookie
-    print(f"🔍 调试2222bm - wx_cookie类型: {type(cookie_str)}")
+    # # 统一处理cookie格式
+    # if isinstance(wx_cookie, tuple):
+    #     # 从tuple中提取cookie字符串
+    #     cookie_str = wx_cookie[2] if len(wx_cookie) > 2 else str(wx_cookie)
+    # elif isinstance(wx_cookie, dict):
+    #     # 从字典转换为字符串
+    #     cookie_str = '; '.join([f"{k}={v}" for k, v in wx_cookie.items()])
+    # else:
+    #     # 已经是字符串
+    #     cookie_str = wx_cookie
+    # print(f"🔍 调试2222bm - wx_cookie类型: {type(cookie_str)}")
 
     try:
         url = WEREAD_BOOKMARKLIST_URL
@@ -384,8 +399,8 @@ def get_bookmark_list(session,bookId,wx_cookie):
             'bookId': bookId,
             'synckey':'0'
         }
-        headers = get_api_headers(cookie_str,bookId)           
-        response = session.get(url, params=params, headers=headers, timeout=30)
+        # headers = get_api_headers(cookie_str,bookId)           
+        response = session.get(url, params=params,  timeout=30)
         
         if response.status_code == 200:
             data = response.json()
@@ -426,7 +441,7 @@ def get_review_list(session,bookId,wx_cookie):
         cookie_str = wx_cookie
     print(f"🔍 调试2222bm - wx_cookie类型: {type(cookie_str)}")
 
-    url = f"https://i.weread.qq.com/review/list"
+    url = f"https://weread.qq.com/review/list"
     params = {
         'bookId': bookId,
         'listType': 11,
@@ -435,9 +450,9 @@ def get_review_list(session,bookId,wx_cookie):
         'listMode': 0
     }
     # 使用参考项目的完整请求头
-    headers = get_api_headers(cookie_str,bookId)           
+    # headers = get_api_headers(cookie_str,bookId)           
 
-    response = session.get(url, params=params, headers=headers)
+    response = session.get(url, params=params)
     if response.status_code == 200:
         data = response.json()
         reviews = data.get('reviews', [])
@@ -448,26 +463,26 @@ def get_review_list(session,bookId,wx_cookie):
         other_reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
         return summary, other_reviews
 
-    elif response.status_code == 401:
-        # 状态码401表示未授权
-        data = response.json()
-        if data.get('errcode') == -2012:
-            print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
-             # 直接刷新Cookie
+    # elif response.status_code == 401:
+    #     # 状态码401表示未授权
+    #     data = response.json()
+    #     if data.get('errcode') == -2012:
+    #         print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
+    #          # 直接刷新Cookie
         
-            new_cookie = refresh_session_simple(session,wx_cookie)
+    #         new_cookie = refresh_session_simple(session,wx_cookie)
 
 
-            if new_cookie == wx_cookie:
-                print("🔄 Cookie未更新,跳过重试")
-                return [], []
-            else:
-                # 递归重试
-                return get_review_list(session,bookId,new_cookie)
+    #         if new_cookie == wx_cookie:
+    #             print("🔄 Cookie未更新,跳过重试")
+    #             return [], []
+    #         else:
+    #             # 递归重试
+    #             return get_review_list(session,bookId,new_cookie)
         
-        else:
-            print(f"❌ 未授权错误: {response.status_code} - {data}")
-        return [], []
+    #     else:
+    #         print(f"❌ 未授权错误: {response.status_code} - {data}")
+    #     return [], []
 
     else:
         print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
@@ -513,7 +528,7 @@ def get_chapter_info(session,bookId):
         return None
         
     """获取章节信息 - 使用正确的API端点"""
-    url = f"https://i.weread.qq.com/book/chapterInfos"
+    url = WEREAD_CHAPTER_INFO
     params = {
         'bookIds': [bookId],
         'synckeys': [0]
@@ -801,10 +816,11 @@ def refresh_session_simple(session,current_cookie):
 def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
     try:
-        # 初始化session和Notion API
-        session = requests.Session()
-        session.cookies.update(parse_cookie_string(weread_token))
+        # # 初始化session和Notion API
+        # session = requests.Session()
+        # session.cookies.update(parse_cookie_string(weread_token))
         
+        session = create_weread_session(COOKIE)
 
         # 原有的同步逻辑，但现在数据获取函数会自己处理Cookie刷新
         latest_sort = get_sort(database_id, notion_token)
