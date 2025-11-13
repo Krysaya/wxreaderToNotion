@@ -820,7 +820,7 @@ def main(weread_token, notion_token, database_id):
         # session = requests.Session()
         # session.cookies.update(parse_cookie_string(weread_token))
         
-        session = create_weread_session(COOKIE)
+        session = create_weread_session(weread_token)
 
         # 原有的同步逻辑，但现在数据获取函数会自己处理Cookie刷新
         latest_sort = get_sort(database_id, notion_token)
