@@ -397,6 +397,8 @@ def get_bookmark_list(session,bookId,wx_cookie):
         url = WEREAD_BOOKMARKLIST_URL
         params = {
             'bookId': bookId,
+            'count' : 500,
+            'offset': 0,
             'synckey':'0'
         }
         # headers = get_api_headers(cookie_str,bookId)           
@@ -487,6 +489,28 @@ def get_review_list(session,bookId,wx_cookie):
     else:
         print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
         return [], []
+
+def get_book_highlights_v2(session,bookId):
+    """获取书籍笔记和划线（新版API）"""
+    url = "https://weread.qq.com/book/highlights"
+    params = {
+        "bookId": bookId,
+        "count": 500,
+        "offset": 0
+    }
+    
+    
+    print(f"🔍 请求新版笔记API: {url}")
+    response = session.get(url, params=params)
+    print(f"🔍 响应状态: {response.status_code}")
+    
+    if response.status_code == 200:
+        data = response.json()
+        print(f"✅ 成功获取新版笔记数据")
+        return data
+    else:
+        print(f"❌ 获取新版笔记失败: {response.status_code} - {response.text[:200]}")
+        return None
 
 def get_bookinfo(session,bookId):
     """获取书籍信息 - 使用正确的API端点"""
@@ -872,7 +896,8 @@ def main(weread_token, notion_token, database_id):
                     
                     print(f"📝 获取划线列表...")
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)
-                    
+                    bookmark_list2 = get_book_highlights_v2(session,book_id)
+
                     print(f"💭 获取笔记和评论...")
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     # bookmark_list.extend(reviews)
