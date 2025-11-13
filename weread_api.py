@@ -498,10 +498,18 @@ def get_book_highlights_v2(session,bookId):
         "count": 500,
         "offset": 0
     }
+    # 使用完整的Cookie（包含用户信息）
+    full_cookie = "wr_fp=457906278; wr_gid=208560242; wr_vid=6417652; wr_skey=iKzzJOjR; wr_pf=0; wr_rt=web%40hnI6K8e_JEVHycmjfl2_AL; wr_ql=0; wr_localvid=9ec32370661ecf49ec43dc6; wr_name=%E4%BD%95%E8%89%B2%E7%9B%B8%E6%92%A9%E6%88%91%E5%BF%83%E5%BC%A6; wr_avatar=https%3A%2F%2Fthirdwx.qlogo.cn%2Fmmopen%2Fvi_32%2FDYAIOgq83epjnpEZ0B4SAuf3Zlce6m0mfEWjI0WHJlLlpGfTiaoo0rcxeiao1duwdcNkcvqteKqA8j1cqv9rEuVQ%2F132; wr_gender=2"
     
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Cookie": full_cookie,  # 使用完整Cookie
+        "Referer": f"https://weread.qq.com/web/reader/{calculate_book_str_id(bookId)}",
+        "Origin": "https://weread.qq.com"
+    }
     
     print(f"🔍 请求新版笔记API: {url}")
-    response = session.get(url, params=params)
+    response = session.get(url, params=params,headers=headers)
     print(f"🔍 响应状态: {response.status_code}")
     
     if response.status_code == 200:
