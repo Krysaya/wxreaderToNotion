@@ -504,7 +504,7 @@ def get_book_highlights_v2(session,bookId):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Cookie": full_cookie,  # 使用完整Cookie
-        "Referer": f"https://weread.qq.com/web/reader/{calculate_book_str_id(bookId)}",
+        "Referer": f"https://weread.qq.com/web/reader/{bookId}",
         "Origin": "https://weread.qq.com"
     }
     
