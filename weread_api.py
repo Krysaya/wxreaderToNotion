@@ -416,11 +416,12 @@ def get_bookmark_list(session,bookId,wx_cookie):
 
         if response.status_code == 200:
             data = response.json()
-            print(f"划线获取成功- :"{chapters})            
             
             # 获取章节信息
             chapters = data.get('chapters', [])
             bookmarks = data.get('updated', [])
+            print(f"✅ 获取划线列表成功: {len(chapters)} 条")
+
             # 返回章节和划线数据
             return {
                 'chapters': chapters,
