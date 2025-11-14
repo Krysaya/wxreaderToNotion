@@ -34,7 +34,7 @@ def refrensh_weread_session(wx_cookie):
         'https://weread.qq.com/web/shelf'
     ]
     updated_cookie = wx_cookie
-    
+
     for url in urls_to_visit:
         try:
             print(f"访问: {url}")
@@ -826,7 +826,7 @@ def main(weread_token, notion_token, database_id):
     try:
         # # 初始化session和Notion API
         session = requests.Session()
-        # session.cookies.update(parse_cookie_string(weread_token))
+        session.cookies.update(parse_cookie_string(weread_token))
         
         # session = create_weread_session(weread_token)
         # print(f"主函数==creat session类型: {type(session)}")
