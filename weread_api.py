@@ -388,13 +388,6 @@ def update_book_in_notion(page_id, book, sort, notion_token):
         }
         
         response = update_page(page_id, properties, notion_token)
-        
-        if response:
-            print(f"✅ 成功更新书籍排序: {title}")
-            return True
-        else:
-            print(f"❌ 更新书籍失败: {title}")
-            return False
             
     except Exception as e:
         print(f"更新书籍时出错: {e}")
@@ -539,62 +532,92 @@ def get_bookinfo(session,bookId):
         return '', 0
 
 def get_chapter_info(session,bookId):
+    """获取章节信息"""
+    session.get(WEREAD_URL)
+    body = {"bookIds": [bookId], "synckeys": [0], "teenmode": 0}
+    r = session.post(WEREAD_CHAPTER_INFO, json=body)
+    if (
+        r.ok
+        and "data" in r.json()
+        and len(r.json()["data"]) == 1
+        and "updated" in r.json()["data"][0]
+    ):
+        update = r.json()["data"][0]["updated"]
+        return {item["chapterUid"]: item for item in update}
+    return None
+# def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_id, notion_token):
+#     """插入书籍到Notion - 只创建基础页面，不添加内容"""
+#     properties = {
+#         "BookName": {"title": [{"text": {"content": title}}]},
+#         "BookId": {"rich_text": [{"text": {"content": bookId}}]},
+#         "Sort": {"number": sort},
+#         "Author": {"rich_text": [{"text": {"content": author}}]},
+#         "Cover": {"files": [{"name": "cover.jpg", "external": {"url": cover}}]},
+#     }
     
-    """获取章节信息 - 添加类型检查"""
-    print(f"🔍 调试 - session类型: {type(session)}")
-    print(f"🔍 调试 - session是否有post方法: {hasattr(session, 'post')}")
+#     if isbn:
+#         properties["ISBN"] = {"rich_text": [{"text": {"content": isbn}}]}
     
-    if not hasattr(session, 'post'):
-        print(f"❌ 错误: session参数不是有效的Session对象")
-        return None
-        
-    """获取章节信息 - 使用正确的API端点"""
-    url = WEREAD_CHAPTER_INFO
-    params = {
-        'bookIds': [bookId],
-        'synckeys': [0]
+#     response = create_page_in_database(database_id, properties, notion_token)
+#     if response:
+#         return response.get("id")  # 返回页面ID用于后续添加内容
+#     return None
+def insert_to_notion(bookName, bookId, cover, sort, author,isbn,rating,database_id, notion_token):
+    """插入到notion-提"""
+    time.sleep(0.3)
+    parent = {
+        "database_id": database_id,
+        "type": "database_id"
     }
-    headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
-            'Referer': 'https://weread.qq.com/web/reader/${bookId}',
-            'Origin': 'https://weread.qq.com'
-    }
-    
-    response = session.post(url, json=params, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        if data and 'data' in data and bookId in data['data']:
-            chapter_info = data['data'][bookId]
-            print(f"✅ 获取章节信息成功: {len(chapter_info.get('updated', []))} 个章节")
-            return chapter_info
-        else:
-            print("⚠️ 章节数据格式异常")
-            return None
-    else:
-        print(f"❌ 获取章节信息失败: {response.status_code} - {response.text}")
-        return None
-
-def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_id, notion_token):
-    """插入书籍到Notion - 只创建基础页面，不添加内容"""
     properties = {
-        "BookName": {"title": [{"text": {"content": title}}]},
-        "BookId": {"rich_text": [{"text": {"content": bookId}}]},
+        "BookName": {"title": [{"type": "text", "text": {"content": bookName}}]},
+        "BookId": {"rich_text": [{"type": "text", "text": {"content": bookId}}]},
+        "ISBN": {"rich_text": [{"type": "text", "text": {"content": isbn}}]},
+        "URL": {"url": f"https://weread.qq.com/web/reader/{calculate_book_str_id(bookId)}"},
+        "Author": {"rich_text": [{"type": "text", "text": {"content": author}}]},
         "Sort": {"number": sort},
-        "Author": {"rich_text": [{"text": {"content": author}}]},
-        "Cover": {"files": [{"name": "cover.jpg", "external": {"url": cover}}]},
+        "Rating": {"number": rating},
+        "Cover": {"files": [{"type": "external", "name": "Cover", "external": {"url": cover}}]},
     }
-    
-    if isbn:
-        properties["ISBN"] = {"rich_text": [{"text": {"content": isbn}}]}
-    
+    read_info = get_read_info(bookId=bookId)
+    if read_info != None:
+        markedStatus = read_info.get("markedStatus", 0)
+        readingTime = read_info.get("readingTime", 0)
+        format_time = ""
+        hour = readingTime // 3600
+        if hour > 0:
+            format_time += f"{hour}时"
+        minutes = readingTime % 3600 // 60
+        if minutes > 0:
+            format_time += f"{minutes}分"
+        properties["Status"] = {"select": {
+            "name": "读完" if markedStatus == 4 else "在读"}}
+        properties["ReadingTime"] = {"rich_text": [
+            {"type": "text", "text": {"content": format_time}}]}
+        if "continueBeginDate" in read_info:
+            properties["BeginDate"] = {"date": {"start": datetime.utcfromtimestamp(read_info.get(
+                "continueBeginDate")).strftime("%Y-%m-%d")}}
+        if "finishedDate" in read_info:
+            properties["EndDate"] = {"date": {"start": datetime.utcfromtimestamp(read_info.get(
+                "finishedDate")).strftime("%Y-%m-%d %H:%M:%S"), "time_zone": "Asia/Shanghai"}}
+         
+
+    icon = {
+        "type": "external",
+        "external": {
+            "url": cover
+        }
+    }
     response = create_page_in_database(database_id, properties, notion_token)
     if response:
         return response.get("id")  # 返回页面ID用于后续添加内容
     return None
-
-def get_children(bookmark_data, summary, reviews):
+    # notion api 限制100个block
+    response = client.pages.create(
+        parent=parent, icon=icon, properties=properties)
+    # id = response["id"]
+    # return id
+# def get_children(bookmark_data, summary, reviews):
     """构建子内容 - 使用新的数据结构"""
     children = []
     
@@ -760,78 +783,44 @@ def add_children(page_id, children, notion_token):
     except Exception as e:
         print(f"❌ 添加子内容时出错: {e}")
         return None
-def update_cookie_from_response(current_cookie, response_cookies):
-    """合并新旧Cookie"""
-    # 解析当前Cookie
-    cookie_dict = {}
-    if current_cookie and isinstance(current_cookie, str):
-        for pair in current_cookie.split('; '):
-            if '=' in pair:
-                name, value = pair.split('=', 1)
-                cookie_dict[name] = value
-    
-    # 更新为新的Cookie值
-    for cookie_dict_item in response_cookies:
-        for name, value in cookie_dict_item.items():
-            cookie_dict[name] = value
-    
-    # 重新构建Cookie字符串
-    return '; '.join([f"{name}={value}" for name, value in cookie_dict.items()])
 
-def refresh_session_simple(session,current_cookie):
-    """增强版cookie刷新 - 参考cookie合并逻辑"""
-    print("🔄 正在刷新微信读书会话...")
-    try:
-        # 第一步：访问主页
-        print("🔍 访问: https://weread.qq.com/")
-        home_resp = session.get("https://weread.qq.com/", timeout=10)
-        print(f"   状态: {home_resp.status_code}")
-        
-        # 第二步：访问书架
-        print("🔍 访问: https://weread.qq.com/web/shelf")  
-        shelf_resp = session.get("https://weread.qq.com/web/shelf", timeout=10)
-        print(f"   状态: {shelf_resp.status_code}")
-        
-        
+def get_children(chapter, summary, bookmark_list):
+    children = []
+    grandchild = {}
+    if chapter != None:
+        # 添加目录
+        children.append(get_table_of_contents())
+        d = {}
+        for data in bookmark_list:
+            chapterUid = data.get("chapterUid", 1)
+            if (chapterUid not in d):
+                d[chapterUid] = []
+            d[chapterUid].append(data)
+        for key, value in d .items():
+            if key in chapter:
+                # 添加章节
+                children.append(get_heading(
+                    chapter.get(key).get("level"), chapter.get(key).get("title")))
+            for i in value:
+                callout = get_callout(
+                    i.get("markText"), data.get("style"), i.get("colorStyle"), i.get("reviewId"))
+                children.append(callout)
+                if i.get("abstract") != None and i.get("abstract") != "":
+                    quote = get_quote(i.get("abstract"))
+                    grandchild[len(children)-1] = quote
 
-        # 获取所有响应中的cookie
-        all_response_cookies = []
-        for resp in [home_resp, shelf_resp]:
-            if resp.cookies:
-                all_response_cookies.append(resp.cookies.get_dict())
-        
-        # 合并cookie
-        new_cookie = update_cookie_from_response(current_cookie, all_response_cookies)
-        
-        # 比较cookie变化
-        old_cookies = {item.split('=')[0]: item.split('=')[1] for item in current_cookie.split('; ') if '=' in item} if current_cookie else {}
-        new_cookies = {item.split('=')[0]: item.split('=')[1] for item in new_cookie.split('; ') if '=' in item}
-        
-        has_changes = False
-        for key in new_cookies:
-            if key not in old_cookies:
-                # print(f"📝 新增字段: {key}")
-                has_changes = True
-            elif old_cookies[key] != new_cookies[key]:
-                # print(f"📝 更新字段: {key} (旧值: {old_cookies[key]}, 新值: {new_cookies[key]})")
-                has_changes = True
-        
-        if not has_changes:
-            print("ℹ️ Cookie未更新")
-            return False, session, current_cookie
-            # 在返回前确保cookie是字符串
-        if isinstance(new_cookie, tuple):
-            new_cookie = new_cookie[2] if len(new_cookie) > 2 else str(new_cookie)
-            # 提取tuple中的cookie字符串   
+    else:
+        # 如果没有章节信息
+        for data in bookmark_list:
+            children.append(get_callout(data.get("markText"),
+                            data.get("style"), data.get("colorStyle"), data.get("reviewId")))
+    if summary != None and len(summary) > 0:
+        children.append(get_heading(1, "点评"))
+        for i in summary:
+            children.append(get_callout(i.get("review").get("content"), i.get(
+                "style"), i.get("colorStyle"), i.get("review").get("reviewId")))
+    return children, grandchild
 
-        print(f"✅ Cookie刷新成功: {new_cookie}")
-        print(f"刷新 - wx_cookie类型: {type(new_cookie)}")
-
-        return True, session, new_cookie
-        
-    except Exception as e:
-        print(f"❌ 刷新会话异常: {e}")
-        return False, session, current_cookie
 
 
 def main(weread_token, notion_token, database_id):
@@ -888,12 +877,13 @@ def main(weread_token, notion_token, database_id):
                     latest_sort += 1
                     
                     # 获取详细数据用于更新内容
-                    # print(f"📖 获取章节信息...")
-                    # chapter = get_chapter_info(session,book_id)
-                    
+
                     print(f"📝 获取划线列表...")
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)
 
+                    print(f"📖 获取章节信息...")
+                    chapter = get_chapter_info(session,book_id,weread_token)
+                    
                     print(f"💭 获取笔记和评论...")
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     bookmark_list.extend(reviews)
@@ -906,7 +896,8 @@ def main(weread_token, notion_token, database_id):
                     
                     # 构建内容
                     print(f"🔨 构建内容结构...")
-                    children, grandchild = get_children(bookmark_list, summary, reviews)
+                    # children, grandchild = get_children(bookmark_list, summary, reviews)
+                    children, grandchild = get_children(chapter, summary, bookmark_list)
                     
                     # 检查是否有内容生成
                     if not children:
@@ -918,16 +909,14 @@ def main(weread_token, notion_token, database_id):
                         continue
                     
                     print(f"✅ 成功生成 {len(children)} 个内容块")
-                    
-                    # 先更新排序
-                    if update_book_in_notion(existing_page_id, book, latest_sort, notion_token):
-                        print(f"✅ 成功更新书籍排序: {title}")
-                    else:
-                        print(f"❌ 更新书籍排序失败: {title}")
-                    
+                    isbn,rating = get_bookinfo(session,bookId)
+
+                    id = insert_to_notion(title, bookId, cover, sort, author,isbn,rating)
+                    results = add_children(id, children,notion_token)
+
                     # 然后添加内容
                     print(f"📚 为已存在书籍添加内容...")
-                    results = add_children(existing_page_id, children, notion_token)
+                    # results = add_children(existing_page_id, children, notion_token)
                     if not results:
                         print(f"❌ 为已存在书籍添加内容失败: {title}")
                         error_count += 1
@@ -938,6 +927,9 @@ def main(weread_token, notion_token, database_id):
                         
                     success_count += 1
                     print(f"✅ 成功更新书籍内容: {title}")
+                    if(len(grandchild)>0 and results!=None):
+                        add_grandchild(grandchild, results)
+                  
                 else:
                     # 新增完整功能：获取详细数据并创建完整页面
                     latest_sort += 1
