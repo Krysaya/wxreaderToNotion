@@ -82,7 +82,11 @@ def refrensh_weread_session(wx_cookie):
                     # 更新Cookie中的wr_skey
                     updated_cookie = update_wr_skey_in_cookie(wx_cookie, new_wr_skey)
                     print(f"✅ 更新后的Cookie: {updated_cookie}")
-            
+                        # 在GitHub Action中，可以保存到环境变量供后续步骤使用
+                    if 'GITHUB_ENV' in os.environ:
+                        with open(os.environ['GITHUB_ENV'], 'a') as f:
+                            f.write(f'WEREAD_COOKIE={updated_cookie}\n')
+
             time.sleep(0.3)
             
         except Exception as e:
@@ -447,8 +451,6 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 # 直接刷新Cookie
             
                 new_cookie = refrensh_weread_session(wx_cookie)
-                session.headers.update({'Cookie': new_cookie})
-
                 # 递归重试
                 return get_review_list(session,bookId,new_cookie)
 
