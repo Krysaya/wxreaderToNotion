@@ -440,18 +440,8 @@ def get_bookmark_list(session,bookId,wx_cookie):
         if response.status_code == 200:
             data = response.json()
             
-            # 获取章节信息
-            chapters = data.get('chapters', [])
-            bookmarks = data.get('updated', [])
-            print(f"✅ 获取划线列表成功: {data} ")
 
-            # 返回章节和划线数据
-            return {
-                'chapters': chapters,
-                'bookmarks': bookmarks
-            }
-        elif response.status_code == 401:
-            data = response.json()
+            print(f"✅ 获取划线列表成功: {data} ")
             if data.get('errcode') == -2012:
                 print("登录超时 (401 + errcode: -2012),需要重新获取Cookie")
                 # 直接刷新Cookie
@@ -461,10 +451,30 @@ def get_bookmark_list(session,bookId,wx_cookie):
 
                 # 递归重试
                 return get_review_list(session,bookId,new_cookie)
+
+            # 获取章节信息
+            chapters = data.get('chapters', [])
+            bookmarks = data.get('updated', [])
+            # 返回章节和划线数据
+            return {
+                'chapters': chapters,
+                'bookmarks': bookmarks
+            }
+        # elif response.status_code == 401:
+        #     data = response.json()
+        #     if data.get('errcode') == -2012:
+        #         print("登录超时 (401 + errcode: -2012),需要重新获取Cookie")
+        #         # 直接刷新Cookie
             
-            else:
-                print(f"错误: {response.status_code} - {data}")
-            return [], []
+        #         new_cookie = refrensh_weread_session(wx_cookie)
+        #         session.headers.update({'Cookie': new_cookie})
+
+        #         # 递归重试
+        #         return get_review_list(session,bookId,new_cookie)
+            
+        #     else:
+        #         print(f"错误: {response.status_code} - {data}")
+        #     return [], []
         
         else:
             print(f"获取划线失败: {response.status_code}")
@@ -493,16 +503,7 @@ def get_review_list(session,bookId,wx_cookie):
     if response.status_code == 200:
         data = response.json()
         reviews = data.get('reviews', [])
-        print(f"✅ 获取笔记列表成功: {len(reviews)} 条笔记")
-        
-        # 分离总结和笔记
-        summary = [r for r in reviews if r.get('review', {}).get('type') == 4]
-        other_reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
-        return summary, other_reviews
-
-    elif response.status_code == 401:
-        # 状态码401表示未授权
-        data = response.json()
+        print(f"✅ 获取笔记列表成功: {data} ")
         if data.get('errcode') == -2012:
             print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
              # 直接刷新Cookie
@@ -511,9 +512,25 @@ def get_review_list(session,bookId,wx_cookie):
             # 递归重试
             return get_review_list(session,bookId,new_cookie)
         
-        else:
-            print(f"错误: {response.status_code} - {data}")
-        return [], []
+        # 分离总结和笔记
+        summary = [r for r in reviews if r.get('review', {}).get('type') == 4]
+        other_reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
+        return summary, other_reviews
+
+    # elif response.status_code == 401:
+    #     # 状态码401表示未授权
+    #     data = response.json()
+    #     if data.get('errcode') == -2012:
+    #         print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
+    #          # 直接刷新Cookie
+        
+    #         new_token = refrensh_weread_session(wx_cookie)
+    #         # 递归重试
+    #         return get_review_list(session,bookId,new_cookie)
+        
+    #     else:
+    #         print(f"错误: {response.status_code} - {data}")
+    #     return [], []
 
     else:
         print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
