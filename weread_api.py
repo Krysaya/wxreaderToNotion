@@ -424,7 +424,7 @@ def get_bookshelf(session):
 
 def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
-    new_cookie = refrensh_weread_session(wx_cookie)
+    # new_cookie = refrensh_weread_session(wx_cookie)
 
     try:
         url = WEREAD_BOOKMARKLIST_URL
@@ -432,12 +432,10 @@ def get_bookmark_list(session,bookId,wx_cookie):
             'bookId': bookId,
             'synckey':'0'
         }
-        # wx_cookie = session.headers.cookie
         print(f"bookid : {bookId}")    
 
-        headers = get_api_headers(new_cookie,bookId)       
+        headers = get_api_headers(wx_cookie,bookId)       
         response = session.get(url, params=params,  timeout=30,headers=headers)
-        # print(f"刷新session的cookie 的header: {headers}")    
 
         if response.status_code == 200:
             data = response.json()
@@ -452,19 +450,32 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 'chapters': chapters,
                 'bookmarks': bookmarks
             }
-       
+        elif response.status_code == 401:
+            data = response.json()
+            if data.get('errcode') == -2012:
+                print("登录超时 (401 + errcode: -2012),需要重新获取Cookie")
+                # 直接刷新Cookie
+            
+                new_cookie = refrensh_weread_session(wx_cookie)
+                session.headers.update({'Cookie': new_cookie})
+
+                # 递归重试
+                return get_review_list(session,bookId,new_cookie)
+            
+            else:
+                print(f"错误: {response.status_code} - {data}")
+            return [], []
+        
         else:
-            print(f"❌ 获取划线失败: {response.status_code}")
+            print(f"获取划线失败: {response.status_code}")
             return None
             
     except Exception as e:
-        print(f"❌ 获取划线异常: {e}")
+        print(f"获取划线异常: {e}")
         return None
 
 def get_review_list(session,bookId,wx_cookie):
     """获取笔记列表 - 使用正确的API端点"""
-    new_cookie = refrensh_weread_session(wx_cookie)
-  
 
     url = WEREAD_REVIEW_LIST_URL
     params = {
@@ -476,7 +487,7 @@ def get_review_list(session,bookId,wx_cookie):
     }
     # 使用参考项目的完整请求头
     # headers = get_api_headers(cookie_str,bookId)           
-    headers = get_api_headers(new_cookie,bookId)       
+    headers = get_api_headers(wx_cookie,bookId)       
 
     response = session.get(url, params=params)
     if response.status_code == 200:
@@ -489,26 +500,20 @@ def get_review_list(session,bookId,wx_cookie):
         other_reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
         return summary, other_reviews
 
-    # elif response.status_code == 401:
-    #     # 状态码401表示未授权
-    #     data = response.json()
-    #     if data.get('errcode') == -2012:
-    #         print("❌ 登录超时 (401 + errcode: -2012)，需要重新获取Cookie")
-    #          # 直接刷新Cookie
+    elif response.status_code == 401:
+        # 状态码401表示未授权
+        data = response.json()
+        if data.get('errcode') == -2012:
+            print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
+             # 直接刷新Cookie
         
-    #         new_cookie = refresh_session_simple(session,wx_cookie)
-
-
-    #         if new_cookie == wx_cookie:
-    #             print("🔄 Cookie未更新,跳过重试")
-    #             return [], []
-    #         else:
-    #             # 递归重试
-    #             return get_review_list(session,bookId,new_cookie)
+            new_token = refrensh_weread_session(wx_cookie)
+            # 递归重试
+            return get_review_list(session,bookId,new_cookie)
         
-    #     else:
-    #         print(f"❌ 未授权错误: {response.status_code} - {data}")
-    #     return [], []
+        else:
+            print(f"错误: {response.status_code} - {data}")
+        return [], []
 
     else:
         print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
@@ -900,7 +905,6 @@ def main(weread_token, notion_token, database_id):
                     
                     print(f"📝 获取划线列表...")
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)
-                    # bookmark_list2 = get_book_highlights_v2(session,book_id)
 
                     print(f"💭 获取笔记和评论...")
                     summary, reviews = get_review_list(session,book_id,weread_token)
