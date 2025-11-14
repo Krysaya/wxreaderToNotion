@@ -507,8 +507,8 @@ def get_review_list(session,bookId,wx_cookie):
         reviews = list(filter(lambda x: x.get("review").get("type") == 1, reviews))
         reviews = list(map(lambda x: x.get("review"), reviews))
         reviews = list(map(lambda x: {**x, "markText": x.pop("content")}, reviews))
-        
-        return summary, other_reviews
+
+        return summary, reviews
 
 
     else:
