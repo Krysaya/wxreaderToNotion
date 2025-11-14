@@ -531,20 +531,49 @@ def get_bookinfo(session,bookId):
         print(f"❌ 获取书籍信息失败: {response.status_code} - {response.text}")
         return '', 0
 
-def get_chapter_info(session,bookId):
+def get_chapter_info(session,bookId,wx_cookie):
+    
+    """获取章节信息 - 添加类型检查"""
+   
+        
+    """获取章节信息 - 使用正确的API端点"""
+    url = WEREAD_CHAPTER_INFO
+    params = {
+        'bookIds': [bookId],
+        'synckeys': [0]
+    }
+    headers = get_api_headers(wx_cookie,bookId)
+    
+    response = session.post(url, json=params, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        if data and 'data' in data and bookId in data['data']:
+            # chapter_info = data['data'][bookId]
+            # print(f"✅ 获取章节信息成功: {len(chapter_info.get('updated', []))} 个章节")
+            update = data["data"][0]["updated"]
+            return {item["chapterUid"]: item for item in update}
+        else:
+            print("⚠️ 章节数据格式异常")
+            return None
+    else:
+        print(f"❌ 获取章节信息失败: {response.status_code} - {response.text}")
+        return None
+
+# def get_chapter_info(session,bookId):
     """获取章节信息"""
-    session.get(WEREAD_URL)
-    body = {"bookIds": [bookId], "synckeys": [0], "teenmode": 0}
-    r = session.post(WEREAD_CHAPTER_INFO, json=body)
-    if (
-        r.ok
-        and "data" in r.json()
-        and len(r.json()["data"]) == 1
-        and "updated" in r.json()["data"][0]
-    ):
-        update = r.json()["data"][0]["updated"]
-        return {item["chapterUid"]: item for item in update}
-    return None
+    # session.get(WEREAD_URL)
+    # body = {"bookIds": [bookId], "synckeys": [0], "teenmode": 0}
+    # r = session.post(WEREAD_CHAPTER_INFO, json=body)
+    # if (
+    #     r.ok
+    #     and "data" in r.json()
+    #     and len(r.json()["data"]) == 1
+    #     and "updated" in r.json()["data"][0]
+    # ):
+    #     update = r.json()["data"][0]["updated"]
+    #     return {item["chapterUid"]: item for item in update}
+    # return None
+    
 # def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_id, notion_token):
 #     """插入书籍到Notion - 只创建基础页面，不添加内容"""
 #     properties = {
