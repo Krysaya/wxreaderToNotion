@@ -28,18 +28,18 @@ def parse_cookie_string(cookie_string):
             cookie_dict[key] = value
     return cookie_dict
 
-def refrensh_weread_session(cookie):
+def refrensh_weread_session(wx_cookie):
    urls_to_visit = [
         'https://weread.qq.com/',
         'https://weread.qq.com/web/shelf',
     ]
     
-    updated_cookie = cookie
+    updated_cookie = wx_cookie
     
     for url in urls_to_visit:
         try:
             print(f"访问: {url}")
-            headers = get_api_headers(cookie)
+            headers = get_api_headers(updated_cookie)
             
             response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
             
