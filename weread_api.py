@@ -28,10 +28,29 @@ def parse_cookie_string(cookie_string):
             cookie_dict[key] = value
     return cookie_dict
 
+def update_wr_skey_in_cookie(original_cookie, new_wr_skey):
+    """更新Cookie中的wr_skey字段"""
+    # 将原始Cookie字符串拆分为键值对
+    cookie_parts = []
+    for item in original_cookie.split(';'):
+        item = item.strip()
+        if item and '=' in item:
+            key, value = item.split('=', 1)
+            # 如果找到wr_skey，则更新它
+            if key == 'wr_skey':
+                cookie_parts.append(f"wr_skey={new_wr_skey}")
+            else:
+                cookie_parts.append(f"{key}={value}")
+    
+    # 如果原始Cookie中没有wr_skey，则添加它
+    if 'wr_skey' not in original_cookie:
+        cookie_parts.append(f"wr_skey={new_wr_skey}")
+    
+    return '; '.join(cookie_parts)
 def refrensh_weread_session(wx_cookie):
     urls_to_visit = [
         'https://weread.qq.com/',
-        'https://weread.qq.com/web/shelf'
+        # 'https://weread.qq.com/web/shelf'
     ]
     updated_cookie = wx_cookie
 
@@ -48,17 +67,22 @@ def refrensh_weread_session(wx_cookie):
             set_cookie_header = response.headers.get('set-cookie')
             if set_cookie_header:
                 print("🔄 服务端返回了新的Cookie")
-                print(f"🔍 Set-Cookie头: {set_cookie_header}")
+                # print(f"🔍 Set-Cookie头: {set_cookie_header}")
                 
-                # 将set-cookie字符串转换为列表（每个元素是一个完整的cookie）
-                if isinstance(set_cookie_header, str):
-                    # 按逗号分割，但要注意日期中的逗号
-                    set_cookie_headers = [cookie.strip() for cookie in set_cookie_header.split(',')]
-                else:
-                    set_cookie_headers = [set_cookie_header]
-                
-                print(f"🔍 解析到 {len(set_cookie_headers)} 个Cookie")
-                updated_cookie = update_cookie_from_response(updated_cookie, set_cookie_headers)
+                # 解析新的wr_skey
+                if 'wr_skey=' in set_cookie_header:
+                    # 从Set-Cookie头中提取wr_skey的值
+                    start = set_cookie_header.find('wr_skey=') + 8
+                    end = set_cookie_header.find(';', start)
+                    if end == -1:
+                        end = len(set_cookie_header)
+                    new_wr_skey = set_cookie_header[start:end]
+                    
+                    print(f"✅ 获取到新的wr_skey: {new_wr_skey}")
+                    
+                    # 更新Cookie中的wr_skey
+                    updated_cookie = update_wr_skey_in_cookie(wx_cookie, new_wr_skey)
+                    print(f"✅ 更新后的Cookie: {updated_cookie}")
             
             time.sleep(0.3)
             
