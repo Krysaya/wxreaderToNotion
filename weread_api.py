@@ -31,7 +31,7 @@ def create_weread_session(cookie):
     """创建微信读书会话"""
     session = requests.Session()
     session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
         "Referer": "https://weread.qq.com/",
         "Origin": "https://weread.qq.com"
     })
@@ -43,6 +43,7 @@ def create_weread_session(cookie):
             key, value = item.strip().split('=', 1)
             cookie_dict[key] = value
     session.cookies.update(cookie_dict)
+    print(f"🔍 调试creat session类型: {type(session)}")
     
     return session
 
@@ -808,6 +809,7 @@ def main(weread_token, notion_token, database_id):
         # session.cookies.update(parse_cookie_string(weread_token))
         
         session = create_weread_session(weread_token)
+        print(f"主函数==creat session类型: {type(session)}")
 
         # 原有的同步逻辑，但现在数据获取函数会自己处理Cookie刷新
         latest_sort = get_sort(database_id, notion_token)
