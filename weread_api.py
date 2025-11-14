@@ -45,7 +45,7 @@ def refrensh_weread_session(wx_cookie):
             # 正确处理set-cookie头
             print(f"R Set-Cookie头: {response.headers}")
 
-            set_cookie_header = response.headers.get('Cookie')
+            set_cookie_header = response.headers.get('set-cookie')
             if set_cookie_header:
                 print("🔄 服务端返回了新的Cookie")
                 print(f"🔍 Set-Cookie头: {set_cookie_header}")
@@ -70,7 +70,7 @@ def refrensh_weread_session(wx_cookie):
 # API header模板 - 用于获取笔记、划线等API调用
 def get_headers(cookie_str):
     return {
-        # 'Cookie': cookie_str,
+        'Cookie': cookie_str,
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
         'Referer': 'https://weread.qq.com/web/shelf',
         'Origin': 'https://weread.qq.com',
