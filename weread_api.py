@@ -443,17 +443,15 @@ def get_bookmark_list(session,bookId,wx_cookie):
             data = response.json()
             
 
-            print(f"✅ 获取划线列表成功: {data} ")
+            # print(f"✅ 获取划线列表成功: {data} ")
             if data.get('errCode') == -2012:
                 print("ERR登录超时 (401 + errcode: -2012),需要重新获取Cookie")
                 # 直接刷新Cookie
             
                 new_cookie = refrensh_weread_session(wx_cookie)
-                # session.headers.update({'Cookie': new_cookie})
-                COOKIE = new_cookie
                 session.cookies.update(parse_cookie_string(new_cookie))
 
-                print(f"✅ 已更新全局COOKIE")
+                # print(f"✅ 已更新全局COOKIE")
 
                 # 递归重试
                 return get_bookmark_list(session,bookId,new_cookie)
@@ -466,21 +464,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 'chapters': chapters,
                 'bookmarks': bookmarks
             }
-        # elif response.status_code == 401:
-        #     data = response.json()
-        #     if data.get('errcode') == -2012:
-        #         print("登录超时 (401 + errcode: -2012),需要重新获取Cookie")
-        #         # 直接刷新Cookie
-            
-        #         new_cookie = refrensh_weread_session(wx_cookie)
-        #         session.headers.update({'Cookie': new_cookie})
 
-        #         # 递归重试
-        #         return get_review_list(session,bookId,new_cookie)
-            
-        #     else:
-        #         print(f"错误: {response.status_code} - {data}")
-        #     return [], []
         
         else:
             print(f"获取划线失败: {response.status_code}")
@@ -509,7 +493,7 @@ def get_review_list(session,bookId,wx_cookie):
     if response.status_code == 200:
         data = response.json()
         reviews = data.get('reviews', [])
-        print(f"✅ 获取笔记列表成功: {data} ")
+        # print(f"✅ 获取笔记列表成功: {data} ")
         if data.get('errCode') == -2012:
             print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
              # 直接刷新Cookie
@@ -523,20 +507,6 @@ def get_review_list(session,bookId,wx_cookie):
         other_reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
         return summary, other_reviews
 
-    # elif response.status_code == 401:
-    #     # 状态码401表示未授权
-    #     data = response.json()
-    #     if data.get('errcode') == -2012:
-    #         print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
-    #          # 直接刷新Cookie
-        
-    #         new_token = refrensh_weread_session(wx_cookie)
-    #         # 递归重试
-    #         return get_review_list(session,bookId,new_cookie)
-        
-    #     else:
-    #         print(f"错误: {response.status_code} - {data}")
-    #     return [], []
 
     else:
         print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
@@ -869,18 +839,13 @@ def refresh_session_simple(session,current_cookie):
 
 
 def main(weread_token, notion_token, database_id):
-    global COOKIE
-    
-    # 初始Cookie
-    COOKIE = os.getenv("WEREAD_TOKEN", "")
+
     """主函数 - 添加错误处理和提前退出"""
     try:
         # # 初始化session和Notion API
         session = requests.Session()
         session.cookies.update(parse_cookie_string(weread_token))
         
-        # session = create_weread_session(weread_token)
-        # print(f"主函数==creat session类型: {type(session)}")
 
         # 原有的同步逻辑，但现在数据获取函数会自己处理Cookie刷新
         latest_sort = get_sort(database_id, notion_token)
@@ -896,7 +861,7 @@ def main(weread_token, notion_token, database_id):
             return
 
         books = bookshelf.get('books', [])
-        print(f"找到 {len(books)} 本书籍需要同步")
+        # print(f"找到 {len(books)} 本书籍需要同步")
 
         # 5. 同步书籍到Notion - 整合完整功能
         success_count = 0
@@ -935,7 +900,7 @@ def main(weread_token, notion_token, database_id):
 
                     print(f"💭 获取笔记和评论...")
                     summary, reviews = get_review_list(session,book_id,weread_token)
-                    # bookmark_list.extend(reviews)
+                    bookmark_list.extend(reviews)
                     
                     # 排序内容
                     bookmark_list = sorted(bookmark_list, key=lambda x: (
@@ -1006,7 +971,7 @@ def main(weread_token, notion_token, database_id):
                     # 获取笔记和评论
                     print(f"💭 获取笔记和评论...")
                     summary, reviews = get_review_list(session,book_id,weread_token)
-                    # bookmark_list.extend(reviews)
+                    bookmark_list.extend(reviews)
                     
                     # 排序内容
                     bookmark_list = sorted(bookmark_list, key=lambda x: (
