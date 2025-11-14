@@ -38,8 +38,8 @@ def refrensh_weread_session(wx_cookie):
     for url in urls_to_visit:
         try:
             print(f"访问: {url}")
-            headers = get_api_headers(wx_cookie)
-            
+            # headers = get_api_headers(wx_cookie,bookId)
+            headers = get_headers(wx_cookie)
             response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
             
             # 正确处理set-cookie头
