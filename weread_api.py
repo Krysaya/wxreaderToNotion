@@ -29,12 +29,11 @@ def parse_cookie_string(cookie_string):
     return cookie_dict
 
 def refrensh_weread_session(wx_cookie):
-   urls_to_visit = [
+    urls_to_visit = [
         'https://weread.qq.com/',
-        'https://weread.qq.com/web/shelf',
+        'https://weread.qq.com/web/shelf'
     ]
-    
-    updated_cookie = ""
+    updated_cookie = wx_cookie
     
     for url in urls_to_visit:
         try:
