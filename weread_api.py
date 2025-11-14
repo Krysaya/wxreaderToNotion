@@ -43,6 +43,8 @@ def refrensh_weread_session(wx_cookie):
             response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
             
             # 正确处理set-cookie头
+            print(f"R Set-Cookie头: {response.headers}")
+
             set_cookie_header = response.headers.get('Cookie')
             if set_cookie_header:
                 print("🔄 服务端返回了新的Cookie")
