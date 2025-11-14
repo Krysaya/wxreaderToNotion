@@ -456,7 +456,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 print(f"✅ 已更新全局COOKIE")
 
                 # 递归重试
-                return get_review_list(session,bookId,new_cookie)
+                return get_bookmark_list(session,bookId,new_cookie)
 
             # 获取章节信息
             chapters = data.get('chapters', [])
