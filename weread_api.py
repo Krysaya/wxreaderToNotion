@@ -28,25 +28,43 @@ def parse_cookie_string(cookie_string):
             cookie_dict[key] = value
     return cookie_dict
 
-def create_weread_session(cookie):
-    """创建微信读书会话"""
-    session = requests.Session()
-    session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
-        "Referer": "https://weread.qq.com/",
-        "Origin": "https://weread.qq.com"
-    })
+def refrensh_weread_session(cookie):
+   urls_to_visit = [
+        'https://weread.qq.com/',
+        'https://weread.qq.com/web/shelf',
+    ]
     
-    # 设置Cookie
-    cookie_dict = {}
-    for item in cookie.split(';'):
-        if '=' in item:
-            key, value = item.strip().split('=', 1)
-            cookie_dict[key] = value
-    session.cookies.update(cookie_dict)
-    print(f"🔍 调试creat session类型: {type(session.cookie)}")
+    updated_cookie = cookie
     
-    return session
+    for url in urls_to_visit:
+        try:
+            print(f"访问: {url}")
+            headers = get_api_headers(cookie)
+            
+            response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
+            
+            # 正确处理set-cookie头
+            set_cookie_header = response.headers.get('set-cookie')
+            if set_cookie_header:
+                print("🔄 服务端返回了新的Cookie")
+                print(f"🔍 Set-Cookie头: {set_cookie_header}")
+                
+                # 将set-cookie字符串转换为列表（每个元素是一个完整的cookie）
+                if isinstance(set_cookie_header, str):
+                    # 按逗号分割，但要注意日期中的逗号
+                    set_cookie_headers = [cookie.strip() for cookie in set_cookie_header.split(',')]
+                else:
+                    set_cookie_headers = [set_cookie_header]
+                
+                print(f"🔍 解析到 {len(set_cookie_headers)} 个Cookie")
+                updated_cookie = update_cookie_from_response(updated_cookie, set_cookie_headers)
+            
+            time.sleep(0.3)
+            
+        except Exception as e:
+            print(f"❌ 访问 {url} 失败: {e}")
+    
+    return updated_cookie
 
 # API header模板 - 用于获取笔记、划线等API调用
 def get_headers(cookie_str):
@@ -66,14 +84,14 @@ def get_api_headers(cookie_str, bookId):
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
         'Referer': f'https://weread.qq.com/web/reader/{bookId}',
         'Origin': 'https://weread.qq.com',
-        # 'Accept': 'application/json, text/plain, */*',
-        # 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        # 'Sec-Ch-Ua':'"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
-        # 'Sec-Ch-Ua-Mobile':'?0',
-        # 'Sec-Ch-Ua-Platform':'"macOS"',
-        # 'Sec-Fetch-Dest':'empty',
-        # 'Sec-Fetch-Mode':'cors',
-        # 'Sec-Fetch-Site':'same-origin',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        'Sec-Ch-Ua':'"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+        'Sec-Ch-Ua-Mobile':'?0',
+        'Sec-Ch-Ua-Platform':'"macOS"',
+        'Sec-Fetch-Dest':'empty',
+        'Sec-Fetch-Mode':'cors',
+        'Sec-Fetch-Site':'same-origin',
         
     }
 # 通用的Notion API请求函数
@@ -382,6 +400,7 @@ def get_bookshelf(session):
 
 def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
+    new_cookie = refrensh_weread_session(wx_cookie)
 
     try:
         url = WEREAD_BOOKMARKLIST_URL
@@ -389,12 +408,12 @@ def get_bookmark_list(session,bookId,wx_cookie):
             'bookId': bookId,
             'synckey':'0'
         }
-        wx_cookie = session.headers.cookie
-        print(f"刷新session的cookie : {wx_cookie}")    
+        # wx_cookie = session.headers.cookie
+        # print(f"刷新session的cookie : {wx_cookie}")    
 
-        headers = get_api_headers(wx_cookie,bookId)       
+        headers = get_api_headers(new_cookie,bookId)       
         response = session.get(url, params=params,  timeout=30,headers=headers)
-        print(f"刷新session的cookie 的header: {headers}")    
+        # print(f"刷新session的cookie 的header: {headers}")    
 
         if response.status_code == 200:
             data = response.json()
@@ -408,7 +427,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 'chapters': chapters,
                 'bookmarks': bookmarks
             }
-        
+       
         else:
             print(f"❌ 获取划线失败: {response.status_code}")
             return None
@@ -807,11 +826,11 @@ def main(weread_token, notion_token, database_id):
     """主函数 - 添加错误处理和提前退出"""
     try:
         # # 初始化session和Notion API
-        # session = requests.Session()
+        session = requests.Session()
         # session.cookies.update(parse_cookie_string(weread_token))
         
-        session = create_weread_session(weread_token)
-        print(f"主函数==creat session类型: {type(session)}")
+        # session = create_weread_session(weread_token)
+        # print(f"主函数==creat session类型: {type(session)}")
 
         # 原有的同步逻辑，但现在数据获取函数会自己处理Cookie刷新
         latest_sort = get_sort(database_id, notion_token)
