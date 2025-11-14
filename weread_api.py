@@ -446,7 +446,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             
 
             print(f"✅ 获取划线列表成功: {data} ")
-            if data.get('errcode') == -2012:
+            if data.get('errCode') == -2012:
                 print("登录超时 (401 + errcode: -2012),需要重新获取Cookie")
                 # 直接刷新Cookie
             
@@ -506,7 +506,7 @@ def get_review_list(session,bookId,wx_cookie):
         data = response.json()
         reviews = data.get('reviews', [])
         print(f"✅ 获取笔记列表成功: {data} ")
-        if data.get('errcode') == -2012:
+        if data.get('errCode') == -2012:
             print("❌ 登录超时 (401 + errcode: -2012),需要重新获取Cookie")
              # 直接刷新Cookie
         
