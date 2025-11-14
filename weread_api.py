@@ -445,25 +445,18 @@ def get_bookmark_list(session,bookId,wx_cookie):
 
             # print(f"✅ 获取划线列表成功: {data} ")
             if data.get('errCode') == -2012:
-                print("ERR登录超时 (401 + errcode: -2012),需要重新获取Cookie")
-                # 直接刷新Cookie
-            
+
                 new_cookie = refrensh_weread_session(wx_cookie)
                 session.cookies.update(parse_cookie_string(new_cookie))
 
-                # print(f"✅ 已更新全局COOKIE")
-
-                # 递归重试
                 return get_bookmark_list(session,bookId,new_cookie)
 
-            # 获取章节信息
-            chapters = data.get('chapters', [])
-            bookmarks = data.get('updated', [])
-            # 返回章节和划线数据
-            return {
-                'chapters': chapters,
-                'bookmarks': bookmarks
-            }
+            updated = data.get("updated")
+            updated = sorted(
+                updated,
+                key=lambda x: (x.get("chapterUid", 1), int(x.get("range").split("-")[0])),
+            )
+        return data["updated"]
 
         
         else:
