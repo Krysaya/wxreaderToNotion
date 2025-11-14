@@ -391,17 +391,15 @@ def get_bookmark_list(session,bookId,wx_cookie):
 
         headers = get_api_headers(wx_cookie,bookId)       
         response = session.get(url, params=params,  timeout=30,headers=headers)
-        
+        print(f"刷新session的cookie 的header: {headers}")    
+
         if response.status_code == 200:
             data = response.json()
-            print(f"🔍 调试 - 完整响应数据: {data}")
             
             # 获取章节信息
             chapters = data.get('chapters', [])
             bookmarks = data.get('updated', [])
-            
-            print(f"✅ 获取数据成功: {len(chapters)} 个章节, {len(bookmarks)} 条划线")
-            
+                        
             # 返回章节和划线数据
             return {
                 'chapters': chapters,
