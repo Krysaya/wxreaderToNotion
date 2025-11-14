@@ -503,8 +503,11 @@ def get_review_list(session,bookId,wx_cookie):
             return get_review_list(session,bookId,new_cookie)
         
         # 分离总结和笔记
-        summary = [r for r in reviews if r.get('review', {}).get('type') == 4]
-        other_reviews = [r for r in reviews if r.get('review', {}).get('type') != 4]
+        summary = list(filter(lambda x: x.get("review").get("type") == 4, reviews))
+        reviews = list(filter(lambda x: x.get("review").get("type") == 1, reviews))
+        reviews = list(map(lambda x: x.get("review"), reviews))
+        reviews = list(map(lambda x: {**x, "markText": x.pop("content")}, reviews))
+        
         return summary, other_reviews
 
 
