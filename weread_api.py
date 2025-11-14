@@ -34,12 +34,12 @@ def refrensh_weread_session(wx_cookie):
         'https://weread.qq.com/web/shelf',
     ]
     
-    updated_cookie = wx_cookie
+    updated_cookie = ""
     
     for url in urls_to_visit:
         try:
             print(f"访问: {url}")
-            headers = get_api_headers(updated_cookie)
+            headers = get_api_headers(wx_cookie)
             
             response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
             
