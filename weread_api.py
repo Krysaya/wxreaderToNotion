@@ -37,13 +37,13 @@ def refrensh_weread_session(wx_cookie):
 
     for url in urls_to_visit:
         try:
-            print(f"访问: {url}")
+            print(f"r访问: {url}")
             # headers = get_api_headers(wx_cookie,bookId)
             headers = get_headers(wx_cookie)
             response = requests.get(url, headers=headers, timeout=10, allow_redirects=True)
             
             # 正确处理set-cookie头
-            set_cookie_header = response.headers.get('set-cookie')
+            set_cookie_header = response.headers.get('Cookie')
             if set_cookie_header:
                 print("🔄 服务端返回了新的Cookie")
                 print(f"🔍 Set-Cookie头: {set_cookie_header}")
@@ -61,7 +61,7 @@ def refrensh_weread_session(wx_cookie):
             time.sleep(0.3)
             
         except Exception as e:
-            print(f"❌ 访问 {url} 失败: {e}")
+            print(f"r 访问 {url} 失败: {e}")
     
     return updated_cookie
 
