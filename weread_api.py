@@ -456,7 +456,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
                 updated,
                 key=lambda x: (x.get("chapterUid", 1), int(x.get("range").split("-")[0])),
             )
-        return data["updated"]
+            return data["updated"]
 
         
         else:
