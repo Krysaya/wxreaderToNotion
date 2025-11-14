@@ -420,7 +420,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             # 获取章节信息
             chapters = data.get('chapters', [])
             bookmarks = data.get('updated', [])
-                        
+            print(f"划线获取成功- :"{chapters})            
             # 返回章节和划线数据
             return {
                 'chapters': chapters,
@@ -437,18 +437,8 @@ def get_bookmark_list(session,bookId,wx_cookie):
 
 def get_review_list(session,bookId,wx_cookie):
     """获取笔记列表 - 使用正确的API端点"""
-    print(f"🔍 调试rw - wx_cookie类型: {type(wx_cookie)}")
-    # 统一处理cookie格式
-    if isinstance(wx_cookie, tuple):
-        # 从tuple中提取cookie字符串
-        cookie_str = wx_cookie[2] if len(wx_cookie) > 2 else str(wx_cookie)
-    elif isinstance(wx_cookie, dict):
-        # 从字典转换为字符串
-        cookie_str = '; '.join([f"{k}={v}" for k, v in wx_cookie.items()])
-    else:
-        # 已经是字符串
-        cookie_str = wx_cookie
-    print(f"🔍 调试2222bm - wx_cookie类型: {type(cookie_str)}")
+    new_cookie = refrensh_weread_session(wx_cookie)
+  
 
     url = f"https://weread.qq.com/review/list"
     params = {
@@ -458,6 +448,7 @@ def get_review_list(session,bookId,wx_cookie):
     }
     # 使用参考项目的完整请求头
     # headers = get_api_headers(cookie_str,bookId)           
+    headers = get_api_headers(new_cookie,bookId)       
 
     response = session.get(url, params=params)
     if response.status_code == 200:
