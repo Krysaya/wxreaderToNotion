@@ -7,6 +7,7 @@ import re
 import time
 import requests
 from urllib.parse import parse_qs
+
 WEREAD_URL = "https://weread.qq.com/"
 WEREAD_NOTEBOOKS_URL = "https://weread.qq.com/api/user/notebook"
 WEREAD_BOOKMARKLIST_URL = "https://weread.qq.com/web/book/bookmarklist"
@@ -43,7 +44,7 @@ def create_weread_session(cookie):
             key, value = item.strip().split('=', 1)
             cookie_dict[key] = value
     session.cookies.update(cookie_dict)
-    print(f"🔍 调试creat session类型: {type(session)}")
+    print(f"🔍 调试creat session类型: {type(session.cookie)}")
     
     return session
 
@@ -65,14 +66,7 @@ def get_api_headers(cookie_str, bookId):
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
         'Referer': f'https://weread.qq.com/web/reader/{bookId}',
         'Origin': 'https://weread.qq.com',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-        'Sec-Ch-Ua':'"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
-        'Sec-Ch-Ua-Mobile':'?0',
-        'Sec-Ch-Ua-Platform':'"macOS"',
-        'Sec-Fetch-Dest':'empty',
-        'Sec-Fetch-Mode':'cors',
-        'Sec-Fetch-Site':'same-origin',
+       
         
     }
 # 通用的Notion API请求函数
@@ -388,6 +382,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             'bookId': bookId,
             'synckey':'0'
         }
+        wx_cookie = session.headers.cookie
         print(f"刷新session的cookie : {wx_cookie}")    
 
         headers = get_api_headers(wx_cookie,bookId)       
