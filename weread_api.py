@@ -408,7 +408,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             'synckey':'0'
         }
         # wx_cookie = session.headers.cookie
-        # print(f"刷新session的cookie : {wx_cookie}")    
+        print(f"bookid : {bookId}")    
 
         headers = get_api_headers(new_cookie,bookId)       
         response = session.get(url, params=params,  timeout=30,headers=headers)
