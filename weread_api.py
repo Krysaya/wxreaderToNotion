@@ -66,7 +66,14 @@ def get_api_headers(cookie_str, bookId):
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36',
         'Referer': f'https://weread.qq.com/web/reader/{bookId}',
         'Origin': 'https://weread.qq.com',
-       
+        # 'Accept': 'application/json, text/plain, */*',
+        # 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        # 'Sec-Ch-Ua':'"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+        # 'Sec-Ch-Ua-Mobile':'?0',
+        # 'Sec-Ch-Ua-Platform':'"macOS"',
+        # 'Sec-Fetch-Dest':'empty',
+        # 'Sec-Fetch-Mode':'cors',
+        # 'Sec-Fetch-Site':'same-origin',
         
     }
 # 通用的Notion API请求函数
