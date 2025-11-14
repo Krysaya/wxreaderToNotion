@@ -420,7 +420,7 @@ def get_bookmark_list(session,bookId,wx_cookie):
             # 获取章节信息
             chapters = data.get('chapters', [])
             bookmarks = data.get('updated', [])
-            print(f"✅ 获取划线列表成功: {len(chapters)} 条")
+            print(f"✅ 获取划线列表成功: {data} ")
 
             # 返回章节和划线数据
             return {
@@ -441,10 +441,12 @@ def get_review_list(session,bookId,wx_cookie):
     new_cookie = refrensh_weread_session(wx_cookie)
   
 
-    url = f"https://weread.qq.com/review/list"
+    url = WEREAD_REVIEW_LIST_URL
     params = {
         'bookId': bookId,
         'synckey': 0,
+        'mine': 1,
+        'listType': 11,
 
     }
     # 使用参考项目的完整请求头
