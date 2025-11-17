@@ -644,145 +644,230 @@ def insert_to_notion(bookName, bookId, cover, sort, author,isbn,rating,database_
     # notion api 限制100个block
     response = client.pages.create(
         parent=parent, icon=icon, properties=properties)
-    # id = response["id"]
-    # return id
+    id = response["id"]
+    return id
 # def get_children(bookmark_data, summary, reviews):
-    """构建子内容 - 使用新的数据结构"""
-    children = []
+#     """构建子内容 - 使用新的数据结构"""
+#     children = []
     
-    chapters = bookmark_data.get('chapters', [])
-    bookmarks = bookmark_data.get('bookmarks', [])
+#     chapters = bookmark_data.get('chapters', [])
+#     bookmarks = bookmark_data.get('bookmarks', [])
     
-    print(f"🔍 调试 - 章节数量: {len(chapters)}")
-    print(f"🔍 调试 - 划线数量: {len(bookmarks)}")
-    print(f"🔍 调试 - 总结数量: {len(summary)}")
-    print(f"🔍 调试 - 笔记数量: {len(reviews)}")
+#     print(f"🔍 调试 - 章节数量: {len(chapters)}")
+#     print(f"🔍 调试 - 划线数量: {len(bookmarks)}")
+#     print(f"🔍 调试 - 总结数量: {len(summary)}")
+#     print(f"🔍 调试 - 笔记数量: {len(reviews)}")
     
-    # 检查是否有任何有效数据
-    has_chapters = len(chapters) > 0
-    has_bookmarks = len(bookmarks) > 0
-    has_summary = len(summary) > 0
-    has_reviews = len(reviews) > 0
+#     # 检查是否有任何有效数据
+#     has_chapters = len(chapters) > 0
+#     has_bookmarks = len(bookmarks) > 0
+#     has_summary = len(summary) > 0
+#     has_reviews = len(reviews) > 0
     
-    if not any([has_chapters, has_bookmarks, has_summary, has_reviews]):
-        print("❌ 没有找到任何章节、划线、总结或笔记数据")
-        return [], {}
+#     if not any([has_chapters, has_bookmarks, has_summary, has_reviews]):
+#         print("❌ 没有找到任何章节、划线、总结或笔记数据")
+#         return [], {}
     
-    # 添加基础标题
-    children.append({
-        "object": "block",
-        "type": "heading_1",
-        "heading_1": {
-            "rich_text": [{"type": "text", "text": {"content": "📚 阅读笔记"}}]
-        }
-    })
+#     # 添加基础标题
+#     children.append({
+#         "object": "block",
+#         "type": "heading_1",
+#         "heading_1": {
+#             "rich_text": [{"type": "text", "text": {"content": "📚 阅读笔记"}}]
+#         }
+#     })
     
-    # 处理目录结构
-    if has_chapters:
-        print(f"🔍 调试 - 处理章节: {len(chapters)}个")
+#     # 处理目录结构
+#     if has_chapters:
+#         print(f"🔍 调试 - 处理章节: {len(chapters)}个")
         
-        children.append({
-            "object": "block", 
-            "type": "heading_1",
-            "heading_1": {
-                "rich_text": [{"type": "text", "text": {"content": "📖 章节目录"}}]
-            }
-        })
+#         children.append({
+#             "object": "block", 
+#             "type": "heading_1",
+#             "heading_1": {
+#                 "rich_text": [{"type": "text", "text": {"content": "📖 章节目录"}}]
+#             }
+#         })
         
-        for i, chap in enumerate(chapters[:10]):  # 限制数量避免过大
-            level = chap.get('level', 1)
-            chap_title = chap.get('title', '')
-            chap_uid = chap.get('chapterUid', '')
+#         for i, chap in enumerate(chapters[:10]):  # 限制数量避免过大
+#             level = chap.get('level', 1)
+#             chap_title = chap.get('title', '')
+#             chap_uid = chap.get('chapterUid', '')
             
-            print(f"🔍 调试 - 章节{i+1}: 级别{level}, 标题: {chap_title}")
+#             print(f"🔍 调试 - 章节{i+1}: 级别{level}, 标题: {chap_title}")
             
-            if level == 1:
-                children.append({
-                    "object": "block",
-                    "type": "heading_2",
-                    "heading_2": {
-                        "rich_text": [{"type": "text", "text": {"content": f"{i+1}. {chap_title}"}}]
-                    }
-                })
-            elif level == 2:
-                children.append({
-                    "object": "block",
-                    "type": "heading_3",
-                    "heading_3": {
-                        "rich_text": [{"type": "text", "text": {"content": f"  {i+1}. {chap_title}"}}]
-                    }
-                })
+#             if level == 1:
+#                 children.append({
+#                     "object": "block",
+#                     "type": "heading_2",
+#                     "heading_2": {
+#                         "rich_text": [{"type": "text", "text": {"content": f"{i+1}. {chap_title}"}}]
+#                     }
+#                 })
+#             elif level == 2:
+#                 children.append({
+#                     "object": "block",
+#                     "type": "heading_3",
+#                     "heading_3": {
+#                         "rich_text": [{"type": "text", "text": {"content": f"  {i+1}. {chap_title}"}}]
+#                     }
+#                 })
     
-    # 处理总结
-    if has_summary:
-        print(f"🔍 调试 - 处理总结: {len(summary)}条")
+#     # 处理总结
+#     if has_summary:
+#         print(f"🔍 调试 - 处理总结: {len(summary)}条")
         
-        children.append({
-            "object": "block",
-            "type": "heading_1",
-            "heading_1": {
-                "rich_text": [{"type": "text", "text": {"content": "💡 读书总结"}}]
-            }
-        })
-        for i, s in enumerate(summary):
-            content = s.get('review', {}).get('content', '')
-            if content:
-                children.append({
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": {
-                        "rich_text": [{"type": "text", "text": {"content": content}}]
-                    }
-                })
+#         children.append({
+#             "object": "block",
+#             "type": "heading_1",
+#             "heading_1": {
+#                 "rich_text": [{"type": "text", "text": {"content": "💡 读书总结"}}]
+#             }
+#         })
+#         for i, s in enumerate(summary):
+#             content = s.get('review', {}).get('content', '')
+#             if content:
+#                 children.append({
+#                     "object": "block",
+#                     "type": "paragraph",
+#                     "paragraph": {
+#                         "rich_text": [{"type": "text", "text": {"content": content}}]
+#                     }
+#                 })
     
-    # 处理笔记和划线
-    all_marks = bookmarks + reviews
-    if all_marks:
-        print(f"🔍 调试 - 处理划线笔记: {len(all_marks)}条")
+#     # 处理笔记和划线
+#     all_marks = bookmarks + reviews
+#     if all_marks:
+#         print(f"🔍 调试 - 处理划线笔记: {len(all_marks)}条")
         
-        children.append({
-            "object": "block",
-            "type": "heading_1", 
-            "heading_1": {
-                "rich_text": [{"type": "text", "text": {"content": "📝 笔记与划线"}}]
-            }
-        })
+#         children.append({
+#             "object": "block",
+#             "type": "heading_1", 
+#             "heading_1": {
+#                 "rich_text": [{"type": "text", "text": {"content": "📝 笔记与划线"}}]
+#             }
+#         })
         
-        # 按章节分组
-        chapter_marks = {}
-        for mark in all_marks:
-            chapter_uid = mark.get('chapterUid', '')
-            if chapter_uid not in chapter_marks:
-                chapter_marks[chapter_uid] = []
-            chapter_marks[chapter_uid].append(mark)
+#         # 按章节分组
+#         chapter_marks = {}
+#         for mark in all_marks:
+#             chapter_uid = mark.get('chapterUid', '')
+#             if chapter_uid not in chapter_marks:
+#                 chapter_marks[chapter_uid] = []
+#             chapter_marks[chapter_uid].append(mark)
         
-        # 按章节顺序处理
-        for chap in chapters:
-            chapter_uid = chap.get('chapterUid', '')
-            if chapter_uid in chapter_marks:
-                # 添加章节标题
-                children.append({
-                    "object": "block",
-                    "type": "heading_2",
-                    "heading_2": {
-                        "rich_text": [{"type": "text", "text": {"content": chap.get('title', '')}}]
-                    }
-                })
+#         # 按章节顺序处理
+#         for chap in chapters:
+#             chapter_uid = chap.get('chapterUid', '')
+#             if chapter_uid in chapter_marks:
+#                 # 添加章节标题
+#                 children.append({
+#                     "object": "block",
+#                     "type": "heading_2",
+#                     "heading_2": {
+#                         "rich_text": [{"type": "text", "text": {"content": chap.get('title', '')}}]
+#                     }
+#                 })
                 
-                # 添加该章节的划线和笔记
-                for mark in chapter_marks[chapter_uid]:
-                    content = mark.get('markText', '') or mark.get('content', '')
-                    if content:
-                        children.append({
-                            "object": "block",
-                            "type": "quote",
-                            "quote": {
-                                "rich_text": [{"type": "text", "text": {"content": content}}]
-                            }
-                        })
+#                 # 添加该章节的划线和笔记
+#                 for mark in chapter_marks[chapter_uid]:
+#                     content = mark.get('markText', '') or mark.get('content', '')
+#                     if content:
+#                         children.append({
+#                             "object": "block",
+#                             "type": "quote",
+#                             "quote": {
+#                                 "rich_text": [{"type": "text", "text": {"content": content}}]
+#                             }
+#                         })
     
-    print(f"🔍 调试 - 最终生成的子块数量: {len(children)}")
-    return children, {}
+#     print(f"🔍 调试 - 最终生成的子块数量: {len(children)}")
+#     return children, {}
+
+def get_table_of_contents():
+    """获取目录"""
+    return {
+        "type": "table_of_contents",
+        "table_of_contents": {
+            "color": "default"
+        }
+    }
+
+
+def get_heading(level, content):
+    if level == 1:
+        heading = "heading_1"
+    elif level == 2:
+        heading = "heading_2"
+    else:
+        heading = "heading_3"
+    return {
+        "type": heading,
+        heading: {
+            "rich_text": [{
+                "type": "text",
+                "text": {
+                    "content": content,
+                }
+            }],
+            "color": "default",
+            "is_toggleable": False
+        }
+    }
+
+
+def get_quote(content):
+    return {
+        "type": "callout",
+        "callout": {
+            "rich_text": [{
+                "type": "text",
+                "text": {
+                    "content": content
+                },
+            }],
+            "color": "default"
+        }
+    }
+
+
+def get_callout(content, style, colorStyle, reviewId):
+#     # 根据不同的划线样式设置不同的emoji 直线type=0 背景颜色是1 波浪线是2
+#     emoji = "🌟"
+#     if style == 0:
+#         emoji = "💡"
+#     elif style == 1:
+#         emoji = "⭐"
+#     # 如果reviewId不是空说明是笔记
+#     if reviewId != None:
+#         emoji = "✍️"
+    color = "default"
+    # 根据划线颜色设置文字的颜色
+    if colorStyle == 1:
+        color = "red"
+    elif colorStyle == 2:
+        color = "purple"
+    elif colorStyle == 3:
+        color = "blue"
+    elif colorStyle == 4:
+        color = "green"
+    elif colorStyle == 5:
+        color = "yellow"
+    return {
+        "type": "quote",
+        "quote": {
+            "rich_text": [{
+                "type": "text",
+                "text": {
+                    "content": content,
+                }
+            }],
+#             "icon": {
+#                 "emoji": emoji
+#             },
+            "color": color
+        }
+    }
 
 def add_children(page_id, children, notion_token):
     """添加子内容到Notion页面 - 处理分块添加"""
@@ -925,7 +1010,6 @@ def main(weread_token, notion_token, database_id):
                     
                     # 构建内容
                     print(f"🔨 构建内容结构...")
-                    # children, grandchild = get_children(bookmark_list, summary, reviews)
                     children, grandchild = get_children(chapter, summary, bookmark_list)
                     
                     # 检查是否有内容生成
@@ -945,7 +1029,6 @@ def main(weread_token, notion_token, database_id):
 
                     # 然后添加内容
                     print(f"📚 为已存在书籍添加内容...")
-                    # results = add_children(existing_page_id, children, notion_token)
                     if not results:
                         print(f"❌ 为已存在书籍添加内容失败: {title}")
                         error_count += 1
@@ -956,8 +1039,7 @@ def main(weread_token, notion_token, database_id):
                         
                     success_count += 1
                     print(f"✅ 成功更新书籍内容: {title}")
-                    if(len(grandchild)>0 and results!=None):
-                        add_grandchild(grandchild, results)
+                   
                   
                 else:
                     # 新增完整功能：获取详细数据并创建完整页面
