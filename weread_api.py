@@ -1047,7 +1047,7 @@ def main(weread_token, notion_token, database_id):
                         continue
                     
                     print(f"✅ 成功生成 :{children}")
-                    break
+                    # break
                     # isbn,rating = get_bookinfo(session,book_id)
 
                     # id = update_book_in_notion(existing_page_id,book,notion_token)
