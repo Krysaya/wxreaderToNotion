@@ -1022,9 +1022,9 @@ def main(weread_token, notion_token, database_id):
                         continue
                     
                     print(f"✅ 成功生成 {len(children)} 个内容块")
-                    isbn,rating = get_bookinfo(session,bookId)
+                    isbn,rating = get_bookinfo(session,book_id)
 
-                    id = insert_to_notion(title, bookId, cover, sort, author,isbn,rating)
+                    id = insert_to_notion(title, book_id, cover, sort, author,isbn,rating)
                     results = add_children(id, children,notion_token)
 
                     # 然后添加内容
