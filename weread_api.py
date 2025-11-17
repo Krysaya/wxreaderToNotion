@@ -584,23 +584,7 @@ def get_chapter_info(session,bookId,wx_cookie):
     #     return {item["chapterUid"]: item for item in update}
     # return None
     
-# def insert_to_notion(title, bookId, cover, sort, author, isbn, rating, database_id, notion_token):
-#     """插入书籍到Notion - 只创建基础页面，不添加内容"""
-#     properties = {
-#         "BookName": {"title": [{"text": {"content": title}}]},
-#         "BookId": {"rich_text": [{"text": {"content": bookId}}]},
-#         "Sort": {"number": sort},
-#         "Author": {"rich_text": [{"text": {"content": author}}]},
-#         "Cover": {"files": [{"name": "cover.jpg", "external": {"url": cover}}]},
-#     }
-    
-#     if isbn:
-#         properties["ISBN"] = {"rich_text": [{"text": {"content": isbn}}]}
-    
-#     response = create_page_in_database(database_id, properties, notion_token)
-#     if response:
-#         return response.get("id")  # 返回页面ID用于后续添加内容
-#     return None
+
 def insert_to_notion(session,bookName, bookId, cover, sort, author,database_id, notion_token):
     """插入到notion-提"""
     time.sleep(0.3)
@@ -651,11 +635,7 @@ def insert_to_notion(session,bookName, bookId, cover, sort, author,database_id, 
     if response:
         return response.get("id")  # 返回页面ID用于后续添加内容
     return None
-    # notion api 限制100个block
-    response = client.pages.create(
-        parent=parent, icon=icon, properties=properties)
-    id = response["id"]
-    return id
+
 # def get_children(bookmark_data, summary, reviews):
 #     """构建子内容 - 使用新的数据结构"""
 #     children = []
@@ -908,44 +888,76 @@ def add_children(page_id, children, notion_token):
         print(f"❌ 添加子内容时出错: {e}")
         return None
 
-def get_children(chapter, summary, bookmark_list):
+def get_children(bookmark_list, summary=None):
     children = []
     grandchild = {}
-    if chapter != None:
-        # 添加目录
-        children.append(get_table_of_contents())
-        d = {}
-        for data in bookmark_list:
-            chapterUid = data.get("chapterUid", 1)
-            if (chapterUid not in d):
-                d[chapterUid] = []
-            d[chapterUid].append(data)
-        for key, value in d .items():
-            if key in chapter:
-                # 添加章节
-                children.append(get_heading(
-                    chapter.get(key).get("level"), chapter.get(key).get("title")))
-            for i in value:
-                callout = get_callout(
-                    i.get("markText"), data.get("style"), i.get("colorStyle"), i.get("reviewId"))
-                children.append(callout)
-                if i.get("abstract") != None and i.get("abstract") != "":
-                    quote = get_quote(i.get("abstract"))
-                    grandchild[len(children)-1] = quote
-
-    else:
-        # 如果没有章节信息
-        for data in bookmark_list:
-            children.append(get_callout(data.get("markText"),
-                            data.get("style"), data.get("colorStyle"), data.get("reviewId")))
-    if summary != None and len(summary) > 0:
+    
+    if not bookmark_list:
+        return children, grandchild
+    
+    # 添加目录
+    children.append(get_table_of_contents())
+    print("✅ 已添加目录")
+    
+    # 按章节UID分组笔记
+    chapter_data = {}
+    for data in bookmark_list:
+        chapterUid = data.get("chapterUid")
+        if chapterUid not in chapter_data:
+            chapter_data[chapterUid] = {
+                "chapterName": data.get("chapterName", "未知章节"),
+                "chapterIdx": data.get("chapterIdx", 0),
+                "notes": []
+            }
+        chapter_data[chapterUid]["notes"].append(data)
+    
+    print(f"🔍 找到 {len(chapter_data)} 个章节")
+    
+    # 按章节索引排序
+    sorted_chapters = sorted(chapter_data.items(), key=lambda x: x[1]["chapterIdx"])
+    
+    # 处理每个章节
+    for chapterUid, chapter_info in sorted_chapters:
+        # 添加章节标题
+        chapter_title = chapter_info["chapterName"]
+        level = 2  # 默认使用二级标题
+        
+        heading_block = get_heading(level, chapter_title)
+        children.append(heading_block)
+        print(f"✅ 已添加章节标题: {chapter_title}")
+        
+        # 添加该章节下的所有笔记
+        for note in chapter_info["notes"]:
+            callout = get_callout(
+                note.get("markText", ""), 
+                note.get("style", 0), 
+                note.get("colorStyle", 0), 
+                note.get("bookmarkId", "")
+            )
+            children.append(callout)
+            
+            # 处理摘要
+            abstract = note.get("abstract")
+            if abstract and abstract.strip():
+                quote = get_quote(abstract)
+                grandchild[len(children)-1] = quote
+    
+    # 添加点评部分
+    if summary and len(summary) > 0:
+        print(f"✅ 添加点评，数量: {len(summary)}")
         children.append(get_heading(1, "点评"))
         for i in summary:
-            children.append(get_callout(i.get("review").get("content"), i.get(
-                "style"), i.get("colorStyle"), i.get("review").get("reviewId")))
+            review_content = i.get("review", {}).get("content", "")
+            if review_content and review_content.strip():
+                children.append(get_callout(
+                    review_content, 
+                    i.get("style", 0),
+                    i.get("colorStyle", 0),
+                    i.get("review", {}).get("reviewId", "")
+                ))
+    
+    print(f"✅ 最终生成的children数量: {len(children)}")
     return children, grandchild
-
-
 
 def main(weread_token, notion_token, database_id):
 
@@ -994,6 +1006,7 @@ def main(weread_token, notion_token, database_id):
                 continue
                 
             title = book.get('title', '未知标题')
+            print(f"book==: {book}")
             print(f"\n正在处理 [{i+1}/{len(books)}]: {title}")
             
             # 检查书籍是否已存在
@@ -1007,13 +1020,10 @@ def main(weread_token, notion_token, database_id):
                     
                     # 获取详细数据用于更新内容
 
-                    print(f"📝 获取划线列表...")
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)
 
-                    print(f"📖 获取章节信息...")
                     chapter = get_chapter_info(session,book_id,weread_token)
                     
-                    print(f"💭 获取笔记和评论...")
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     bookmark_list.extend(reviews)
                     
@@ -1025,7 +1035,7 @@ def main(weread_token, notion_token, database_id):
                     
                     # 构建内容
                     print(f"🔨 构建内容结构...")
-                    children, grandchild = get_children(chapter, summary, bookmark_list)
+                    children, grandchild = get_children(bookmark_list, summary, reviews)
                     
                     # 检查是否有内容生成
                     if not children:
@@ -1039,9 +1049,8 @@ def main(weread_token, notion_token, database_id):
                     print(f"✅ 成功生成 {len(children)} 个内容块")
                     # isbn,rating = get_bookinfo(session,book_id)
 
-                    id = insert_to_notion(session,title, book_id, cover, latest_sort, 
-                                            book.get('author', '') , database_id, notion_token)
-                    results = add_children(id, children,notion_token)
+                    # id = update_book_in_notion(existing_page_id,book,notion_token)
+                    results = add_children(existing_page_id, children,notion_token)
 
                     # 然后添加内容
                     print(f"📚 为已存在书籍添加内容...")
