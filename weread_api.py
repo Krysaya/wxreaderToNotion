@@ -888,7 +888,7 @@ def add_children(page_id, children, notion_token):
         print(f"❌ 添加子内容时出错: {e}")
         return None
 
-def get_children(bookmark_list, summary=None):
+def get_children(bookmark_list, summary,reviews):
     children = []
     grandchild = {}
     
@@ -987,7 +987,7 @@ def main(weread_token, notion_token, database_id):
         # 5. 同步书籍到Notion - 整合完整功能
         success_count = 0
         error_count = 0
-        max_errors = 3  # 最大错误次数
+        max_errors = 1  # 最大错误次数
         
         for i, book in enumerate(books):
             # 原有的书籍基本信息处理
@@ -1046,7 +1046,8 @@ def main(weread_token, notion_token, database_id):
                             break
                         continue
                     
-                    print(f"✅ 成功生成 {len(children)} 个内容块")
+                    print(f"✅ 成功生成 :{children}")
+                    break
                     # isbn,rating = get_bookinfo(session,book_id)
 
                     # id = update_book_in_notion(existing_page_id,book,notion_token)
