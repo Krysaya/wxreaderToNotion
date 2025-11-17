@@ -980,7 +980,9 @@ def main(weread_token, notion_token, database_id):
         for i, book in enumerate(books):
             # 原有的书籍基本信息处理
             book_id = book.get('bookId')
-            cover = book.get("cover")
+            cover = 'http'
+            if book.get('cover'):
+                cover = book.get('cover')
             sort = book["sort"]
             author = book.get("author")
             if not book_id:
@@ -1037,7 +1039,7 @@ def main(weread_token, notion_token, database_id):
                     print(f"✅ 成功生成 {len(children)} 个内容块")
                     # isbn,rating = get_bookinfo(session,book_id)
 
-                    id = insert_to_notion(session,title, book_id, book.get('cover', ''), latest_sort, 
+                    id = insert_to_notion(session,title, book_id, cover, latest_sort, 
                                             book.get('author', '') , database_id, notion_token)
                     results = add_children(id, children,notion_token)
 
