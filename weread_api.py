@@ -601,7 +601,7 @@ def get_chapter_info(session,bookId,wx_cookie):
 #     if response:
 #         return response.get("id")  # 返回页面ID用于后续添加内容
 #     return None
-def insert_to_notion(bookName, bookId, cover, sort, author,isbn,rating,database_id, notion_token):
+def insert_to_notion(bookName, bookId, cover, sort, author,database_id, notion_token):
     """插入到notion-提"""
     time.sleep(0.3)
     parent = {
@@ -611,11 +611,11 @@ def insert_to_notion(bookName, bookId, cover, sort, author,isbn,rating,database_
     properties = {
         "BookName": {"title": [{"type": "text", "text": {"content": bookName}}]},
         "BookId": {"rich_text": [{"type": "text", "text": {"content": bookId}}]},
-        "ISBN": {"rich_text": [{"type": "text", "text": {"content": isbn}}]},
+        # "ISBN": {"rich_text": [{"type": "text", "text": {"content": isbn}}]},
         "URL": {"url": f"https://weread.qq.com/web/reader/{bookId}"},
         "Author": {"rich_text": [{"type": "text", "text": {"content": author}}]},
         "Sort": {"number": sort},
-        "Rating": {"number": rating},
+        # "Rating": {"number": rating},
         "Cover": {"files": [{"type": "external", "name": "Cover", "external": {"url": cover}}]},
     }
     read_info = get_read_info(bookId=bookId)
@@ -1035,9 +1035,9 @@ def main(weread_token, notion_token, database_id):
                         continue
                     
                     print(f"✅ 成功生成 {len(children)} 个内容块")
-                    isbn,rating = get_bookinfo(session,book_id)
+                    # isbn,rating = get_bookinfo(session,book_id)
 
-                    id = insert_to_notion(title, book_id, cover, sort, author,isbn,rating)
+                    id = insert_to_notion(title, book_id, cover, sort, author,database_id, notion_token)
                     results = add_children(id, children,notion_token)
 
                     # 然后添加内容
@@ -1082,7 +1082,7 @@ def main(weread_token, notion_token, database_id):
                     ))
                     
                     # 获取书籍详细信息
-                    isbn, rating = get_bookinfo(session,book_id)
+                    # isbn, rating = get_bookinfo(session,book_id)
                     
                     # 构建内容结构
                     children, grandchild = get_children(bookmark_list, summary, reviews)
@@ -1100,7 +1100,7 @@ def main(weread_token, notion_token, database_id):
                     # 创建Notion页面 - 使用原有的add_book_to_notion函数
                     print(f"🔄 创建Notion页面...")
                     page_id = insert_to_notion(title, book_id, book.get('cover', ''), latest_sort, 
-                                            book.get('author', ''), isbn, rating, database_id, notion_token)
+                                            book.get('author', '') , database_id, notion_token)
                     if not page_id:
                         print(f"❌ 创建Notion页面失败: {title}")
                         error_count += 1
