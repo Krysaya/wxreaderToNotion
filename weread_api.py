@@ -7,6 +7,7 @@ import re
 import time
 import requests
 from urllib.parse import parse_qs
+from datetime import datetime
 
 WEREAD_URL = "https://weread.qq.com/"
 WEREAD_NOTEBOOKS_URL = "https://weread.qq.com/api/user/notebook"
@@ -486,7 +487,7 @@ def get_review_list(session,bookId,wx_cookie):
         
             new_token = refrensh_weread_session(wx_cookie)
             # 递归重试
-            return get_review_list(session,bookId,new_cookie)
+            return get_review_list(session,bookId,new_token)
         
         # 分离总结和笔记
         summary = list(filter(lambda x: x.get("review").get("type") == 4, reviews))
@@ -500,6 +501,15 @@ def get_review_list(session,bookId,wx_cookie):
     else:
         print(f"❌ 获取笔记列表失败: {response.status_code} - {response.text}")
         return [], []
+
+def get_read_info(session,bookId):
+
+    params = dict(bookId=bookId, readingDetail=1,
+                  readingBookIndex=1, finishedDate=1)
+    r = session.get(WEREAD_READ_INFO_URL, params=params)
+    if r.ok:
+        return r.json()
+    return None
 
 
 def get_bookinfo(session,bookId):
@@ -602,7 +612,7 @@ def insert_to_notion(bookName, bookId, cover, sort, author,isbn,rating,database_
         "BookName": {"title": [{"type": "text", "text": {"content": bookName}}]},
         "BookId": {"rich_text": [{"type": "text", "text": {"content": bookId}}]},
         "ISBN": {"rich_text": [{"type": "text", "text": {"content": isbn}}]},
-        "URL": {"url": f"https://weread.qq.com/web/reader/{calculate_book_str_id(bookId)}"},
+        "URL": {"url": f"https://weread.qq.com/web/reader/{bookId}"},
         "Author": {"rich_text": [{"type": "text", "text": {"content": author}}]},
         "Sort": {"number": sort},
         "Rating": {"number": rating},
@@ -970,6 +980,9 @@ def main(weread_token, notion_token, database_id):
         for i, book in enumerate(books):
             # 原有的书籍基本信息处理
             book_id = book.get('bookId')
+            cover = book.get("cover")
+            sort = book["sort"]
+            author = book.get("author")
             if not book_id:
                 print("❌ 书籍ID缺失,跳过")
                 error_count += 1
@@ -1044,17 +1057,7 @@ def main(weread_token, notion_token, database_id):
                 else:
                     # 新增完整功能：获取详细数据并创建完整页面
                     latest_sort += 1
-                    
-                    # # 获取章节信息
-                    # print(f"📖 获取章节信息...")
-                    # chapter = get_chapter_info(session,book_id)
-                    # if chapter is None:
-                    #     print(f"❌ 获取章节信息失败: {title}")
-                    #     error_count += 1
-                    #     if error_count >= max_errors:
-                    #         print("❌ 错误次数超过限制，停止同步")
-                    #         break
-                    #     continue
+                 
                     
                     # 获取划线列表
                     print(f"📝 获取划线列表...")
