@@ -218,7 +218,7 @@ def get_existing_note_ids(notion_token,page_id):
         
         for i, block in enumerate(blocks):
             block_type = block.get("type")
-            block_id = block.get("reviewId")
+            block_id = block.get("id")
             
             # 只处理callout类型的块（你的笔记块）
             if block_type == "callout":
