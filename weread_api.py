@@ -194,12 +194,52 @@ def update_page(page_id, properties, notion_token=None):
     endpoint = f"/pages/{page_id}"
     payload = {"properties": properties}
     return notion_api_request("PATCH", endpoint, payload, notion_token)
+# 查找page
+def get_pages(page_id, notion_token):
+    """更新页面属性"""
+    endpoint = f"/pages/{page_id}"
+    return notion_api_request("GET", endpoint, None,notion_token)
 
 # 获取数据库信息
 def get_database_info(database_id, notion_token=None):
     """获取数据库信息"""
     endpoint = f"/databases/{database_id}"
     return notion_api_request("GET", endpoint, notion_token=notion_token)
+
+# 获取Notion页面中所有笔记块的唯一标识
+def get_existing_note_ids(notion_token,page_id):
+    """获取Notion页面中所有笔记块的唯一标识"""
+    existing_note_ids = set()
+    
+    try:
+        # 获取页面所有块
+        blocks = get_pages(page_id, notion_token)
+        print(f"🔍 共获取到 {len(blocks)} 个块")
+        
+        for i, block in enumerate(blocks):
+            block_type = block.get("type")
+            block_id = block.get("reviewId")
+            
+            # 只处理callout类型的块（你的笔记块）
+            if block_type == "callout":
+                existing_note_ids.add(block_id)
+                
+                # 打印调试信息
+                callout_content = block.get("callout", {})
+                text_content = ""
+                if "text" in callout_content and callout_content["text"]:
+                    first_text = callout_content["text"][0]
+                    text_content = first_text.get("text", {}).get("content", "")[:30]
+                
+                print(f"  {i+1}. 找到笔记块: {block_id}")
+                print(f"     内容预览: {text_content}...")
+        
+        print(f"✅ 共找到 {len(existing_note_ids)} 个现有笔记块")
+        return existing_note_ids
+        
+    except Exception as e:
+        print(f"❌ 查询现有笔记ID失败: {e}")
+        return set()
 
 def get_sort(database_id, notion_token):
     """获取最新的排序值 - 修正获取逻辑"""
@@ -511,7 +551,6 @@ def get_read_info(session,bookId):
         return r.json()
     return None
 
-
 def get_bookinfo(session,bookId):
     """获取书籍信息 - 使用正确的API端点"""
     url = f"https://i.weread.qq.com/book/info"
@@ -540,36 +579,6 @@ def get_bookinfo(session,bookId):
     else:
         print(f"❌ 获取书籍信息失败: {response.status_code} - {response.text}")
         return '', 0
-
-def get_chapter_info(session,bookId,wx_cookie):
-    
-    """获取章节信息 - 添加类型检查"""
-   
-        
-    """获取章节信息 - 使用正确的API端点"""
-    url = WEREAD_CHAPTER_INFO
-    params = {
-        'bookIds': [bookId],
-        'synckeys': [0]
-    }
-    headers = get_api_headers(wx_cookie,bookId)
-    
-    response = session.post(url, json=params, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        if data and 'data' in data and bookId in data['data']:
-            # chapter_info = data['data'][bookId]
-            # print(f"✅ 获取章节信息成功: {len(chapter_info.get('updated', []))} 个章节")
-            update = data["data"][0]["updated"]
-            return {item["chapterUid"]: item for item in update}
-        else:
-            print("⚠️ 章节数据格式异常")
-            return None
-    else:
-        print(f"❌ 获取章节信息失败: {response.status_code} - {response.text}")
-        return None
-
-  
 
 def insert_to_notion(session,bookName, bookId, cover, sort, author,database_id, notion_token):
     """插入到notion-提"""
@@ -622,8 +631,6 @@ def insert_to_notion(session,bookName, bookId, cover, sort, author,database_id, 
         return response.get("id")  # 返回页面ID用于后续添加内容
     return None
 
-
-
 def get_table_of_contents():
     """获取目录"""
     return {
@@ -632,7 +639,6 @@ def get_table_of_contents():
             "color": "default"
         }
     }
-
 
 def get_heading(level, content):
     if level == 1:
@@ -655,7 +661,6 @@ def get_heading(level, content):
         }
     }
 
-
 def get_quote(content):
     return {
         "type": "callout",
@@ -670,17 +675,16 @@ def get_quote(content):
         }
     }
 
-
 def get_callout(content, style, colorStyle, reviewId):
 #     # 根据不同的划线样式设置不同的emoji 直线type=0 背景颜色是1 波浪线是2
-#     emoji = "🌟"
-#     if style == 0:
-#         emoji = "💡"
-#     elif style == 1:
-#         emoji = "⭐"
+    emoji = "🌟"
+    if style == 0:
+        emoji = "💡"
+    elif style == 1:
+        emoji = "⭐"
 #     # 如果reviewId不是空说明是笔记
-#     if reviewId != None:
-#         emoji = "✍️"
+    if reviewId != None:
+        emoji = "✍️"
     color = "default"
     # 根据划线颜色设置文字的颜色
     if colorStyle == 1:
@@ -778,7 +782,7 @@ def get_children(bookmark_list, summary,reviews):
         
         # 添加该章节下的所有笔记
         for note in reviews:
-            callout = get_quote(
+            callout = get_callout(
                 note.get("markText", ""), 
                 note.get("style", 0), 
                 note.get("colorStyle", 0), 
@@ -786,12 +790,7 @@ def get_children(bookmark_list, summary,reviews):
             )
             children.append(callout)
             
-            # # 处理摘要
-            # abstract = note.get("abstract")
-            # if abstract and abstract.strip():
-            #     quote = get_quote(abstract)
-            #     grandchild[len(children)-1] = quote
-          # 添加该章节下的所有笔记
+        
      # 处理想法 (reviews)
     if reviews and len(reviews) > 0:
         print(f"✅ 添加想法，数量: {len(reviews)}")
@@ -872,7 +871,6 @@ def main(weread_token, notion_token, database_id):
             return
 
         books = bookshelf.get('books', [])
-        # print(f"找到 {len(books)} 本书籍需要同步")
 
         # 5. 同步书籍到Notion - 整合完整功能
         success_count = 0
@@ -905,15 +903,11 @@ def main(weread_token, notion_token, database_id):
             try:
                 if existing_page_id:
                     # 更新现有书籍 - 同时添加或更新内容
-                    print(f"🔄 书籍已存在，更新内容: {title}")
                     latest_sort += 1
                     
                     # 获取详细数据用于更新内容
 
-                    bookmark_list = get_bookmark_list(session,book_id,weread_token)
-
-                    # chapter = get_chapter_info(session,book_id,weread_token)
-                    
+                    bookmark_list = get_bookmark_list(session,book_id,weread_token)                    
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     bookmark_list.extend(reviews)
                     
@@ -922,7 +916,10 @@ def main(weread_token, notion_token, database_id):
                         x.get("chapterUid", 1), 
                         0 if x.get("range", "") == "" else int(x.get("range").split("-")[0])
                     ))
-                    
+                    # 2. 获取该页面上已存在的笔记ID
+                    existing_note_ids = get_existing_note_ids(notion_token, page_id)
+                    print(f"🔄 书籍已存在ID,更新内容: {existing_note_ids}")
+                    return
                     # 构建内容
                     print(f"🔨 构建内容结构...")
                     children, grandchild = get_children(bookmark_list, summary, reviews)
