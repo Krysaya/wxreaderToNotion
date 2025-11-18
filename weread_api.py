@@ -937,10 +937,7 @@ def main(weread_token, notion_token, database_id):
                         continue
                     
                     print(f"✅ 成功生成 :{grandchild}")
-                    # break
-                    # isbn,rating = get_bookinfo(session,book_id)
 
-                    # id = update_book_in_notion(existing_page_id,book,notion_token)
                     results = add_children(existing_page_id, children,notion_token)
 
                     # 然后添加内容
