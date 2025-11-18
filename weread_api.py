@@ -197,7 +197,7 @@ def update_page(page_id, properties, notion_token=None):
 # 查找page
 def get_pages(page_id, notion_token):
     """更新页面属性"""
-    endpoint = f"/pages/{page_id}"
+    endpoint = f"/blocks/{page_id}/children"
     return notion_api_request("GET", endpoint, None,notion_token)
 
 # 获取数据库信息
