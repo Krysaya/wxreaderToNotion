@@ -336,7 +336,7 @@ def add_book_to_notion(book, sort, database_id, notion_token):
         title = book_data.get('title', '未知标题')
         book_id = book_data.get('bookId', book.get('bookId', ''))
         author = book_data.get('author', '未知作者')
-        cover = book_data.get('cover', '')
+        cover = book_data.get('cover', 'https://')
         
         # 根据实际数据库结构配置字段类型
         properties = {
@@ -569,21 +569,7 @@ def get_chapter_info(session,bookId,wx_cookie):
         print(f"❌ 获取章节信息失败: {response.status_code} - {response.text}")
         return None
 
-# def get_chapter_info(session,bookId):
-    """获取章节信息"""
-    # session.get(WEREAD_URL)
-    # body = {"bookIds": [bookId], "synckeys": [0], "teenmode": 0}
-    # r = session.post(WEREAD_CHAPTER_INFO, json=body)
-    # if (
-    #     r.ok
-    #     and "data" in r.json()
-    #     and len(r.json()["data"]) == 1
-    #     and "updated" in r.json()["data"][0]
-    # ):
-    #     update = r.json()["data"][0]["updated"]
-    #     return {item["chapterUid"]: item for item in update}
-    # return None
-    
+  
 
 def insert_to_notion(session,bookName, bookId, cover, sort, author,database_id, notion_token):
     """插入到notion-提"""
@@ -636,143 +622,7 @@ def insert_to_notion(session,bookName, bookId, cover, sort, author,database_id, 
         return response.get("id")  # 返回页面ID用于后续添加内容
     return None
 
-# def get_children(bookmark_data, summary, reviews):
-#     """构建子内容 - 使用新的数据结构"""
-#     children = []
-    
-#     chapters = bookmark_data.get('chapters', [])
-#     bookmarks = bookmark_data.get('bookmarks', [])
-    
-#     print(f"🔍 调试 - 章节数量: {len(chapters)}")
-#     print(f"🔍 调试 - 划线数量: {len(bookmarks)}")
-#     print(f"🔍 调试 - 总结数量: {len(summary)}")
-#     print(f"🔍 调试 - 笔记数量: {len(reviews)}")
-    
-#     # 检查是否有任何有效数据
-#     has_chapters = len(chapters) > 0
-#     has_bookmarks = len(bookmarks) > 0
-#     has_summary = len(summary) > 0
-#     has_reviews = len(reviews) > 0
-    
-#     if not any([has_chapters, has_bookmarks, has_summary, has_reviews]):
-#         print("❌ 没有找到任何章节、划线、总结或笔记数据")
-#         return [], {}
-    
-#     # 添加基础标题
-#     children.append({
-#         "object": "block",
-#         "type": "heading_1",
-#         "heading_1": {
-#             "rich_text": [{"type": "text", "text": {"content": "📚 阅读笔记"}}]
-#         }
-#     })
-    
-#     # 处理目录结构
-#     if has_chapters:
-#         print(f"🔍 调试 - 处理章节: {len(chapters)}个")
-        
-#         children.append({
-#             "object": "block", 
-#             "type": "heading_1",
-#             "heading_1": {
-#                 "rich_text": [{"type": "text", "text": {"content": "📖 章节目录"}}]
-#             }
-#         })
-        
-#         for i, chap in enumerate(chapters[:10]):  # 限制数量避免过大
-#             level = chap.get('level', 1)
-#             chap_title = chap.get('title', '')
-#             chap_uid = chap.get('chapterUid', '')
-            
-#             print(f"🔍 调试 - 章节{i+1}: 级别{level}, 标题: {chap_title}")
-            
-#             if level == 1:
-#                 children.append({
-#                     "object": "block",
-#                     "type": "heading_2",
-#                     "heading_2": {
-#                         "rich_text": [{"type": "text", "text": {"content": f"{i+1}. {chap_title}"}}]
-#                     }
-#                 })
-#             elif level == 2:
-#                 children.append({
-#                     "object": "block",
-#                     "type": "heading_3",
-#                     "heading_3": {
-#                         "rich_text": [{"type": "text", "text": {"content": f"  {i+1}. {chap_title}"}}]
-#                     }
-#                 })
-    
-#     # 处理总结
-#     if has_summary:
-#         print(f"🔍 调试 - 处理总结: {len(summary)}条")
-        
-#         children.append({
-#             "object": "block",
-#             "type": "heading_1",
-#             "heading_1": {
-#                 "rich_text": [{"type": "text", "text": {"content": "💡 读书总结"}}]
-#             }
-#         })
-#         for i, s in enumerate(summary):
-#             content = s.get('review', {}).get('content', '')
-#             if content:
-#                 children.append({
-#                     "object": "block",
-#                     "type": "paragraph",
-#                     "paragraph": {
-#                         "rich_text": [{"type": "text", "text": {"content": content}}]
-#                     }
-#                 })
-    
-#     # 处理笔记和划线
-#     all_marks = bookmarks + reviews
-#     if all_marks:
-#         print(f"🔍 调试 - 处理划线笔记: {len(all_marks)}条")
-        
-#         children.append({
-#             "object": "block",
-#             "type": "heading_1", 
-#             "heading_1": {
-#                 "rich_text": [{"type": "text", "text": {"content": "📝 笔记与划线"}}]
-#             }
-#         })
-        
-#         # 按章节分组
-#         chapter_marks = {}
-#         for mark in all_marks:
-#             chapter_uid = mark.get('chapterUid', '')
-#             if chapter_uid not in chapter_marks:
-#                 chapter_marks[chapter_uid] = []
-#             chapter_marks[chapter_uid].append(mark)
-        
-#         # 按章节顺序处理
-#         for chap in chapters:
-#             chapter_uid = chap.get('chapterUid', '')
-#             if chapter_uid in chapter_marks:
-#                 # 添加章节标题
-#                 children.append({
-#                     "object": "block",
-#                     "type": "heading_2",
-#                     "heading_2": {
-#                         "rich_text": [{"type": "text", "text": {"content": chap.get('title', '')}}]
-#                     }
-#                 })
-                
-#                 # 添加该章节的划线和笔记
-#                 for mark in chapter_marks[chapter_uid]:
-#                     content = mark.get('markText', '') or mark.get('content', '')
-#                     if content:
-#                         children.append({
-#                             "object": "block",
-#                             "type": "quote",
-#                             "quote": {
-#                                 "rich_text": [{"type": "text", "text": {"content": content}}]
-#                             }
-#                         })
-    
-#     print(f"🔍 调试 - 最终生成的子块数量: {len(children)}")
-#     return children, {}
+
 
 def get_table_of_contents():
     """获取目录"""
@@ -905,7 +755,7 @@ def get_children(bookmark_list, summary,reviews):
         chapterUid = data.get("chapterUid")
         if chapterUid not in chapter_data:
             chapter_data[chapterUid] = {
-                "chapterName": data.get("chapterName", "未知章节"),
+                "chapterName": data.get("title", "未知章节"),
                 "chapterIdx": data.get("chapterIdx", 0),
                 "notes": []
             }
@@ -927,8 +777,8 @@ def get_children(bookmark_list, summary,reviews):
         print(f"✅ 已添加章节标题: {chapter_title}")
         
         # 添加该章节下的所有笔记
-        for note in chapter_info["notes"]:
-            callout = get_callout(
+        for note in reviews:
+            callout = get_quote(
                 note.get("markText", ""), 
                 note.get("style", 0), 
                 note.get("colorStyle", 0), 
@@ -936,11 +786,51 @@ def get_children(bookmark_list, summary,reviews):
             )
             children.append(callout)
             
-            # 处理摘要
-            abstract = note.get("abstract")
-            if abstract and abstract.strip():
-                quote = get_quote(abstract)
-                grandchild[len(children)-1] = quote
+            # # 处理摘要
+            # abstract = note.get("abstract")
+            # if abstract and abstract.strip():
+            #     quote = get_quote(abstract)
+            #     grandchild[len(children)-1] = quote
+          # 添加该章节下的所有笔记
+     # 处理想法 (reviews)
+    if reviews and len(reviews) > 0:
+        print(f"✅ 添加想法，数量: {len(reviews)}")
+        children.append(get_heading(1, "想法"))
+        
+        # 按章节分组想法
+        review_chapter_data = {}
+        for review in reviews:
+            chapterUid = review.get("chapterUid", 1)
+            if chapterUid not in review_chapter_data:
+                review_chapter_data[chapterUid] = {
+                    "chapterName": review.get("chapterName", f"章节{chapterUid}"),
+                    "reviews": []
+                }
+            review_chapter_data[chapterUid]["reviews"].append(review)
+        
+        # 按chapterIdx排序
+        sorted_review_chapters = sorted(review_chapter_data.items(), key=lambda x: x[1]["reviews"][0].get("chapterIdx", 0))
+        
+        for chapterUid, chapter_info in sorted_review_chapters:
+            # 添加想法章节标题
+            chapter_title = chapter_info["chapterName"]
+            children.append(get_heading(3, f"{chapter_title} - 想法"))
+            
+            # 添加该章节的想法
+            for review in chapter_info["reviews"]:
+                callout = get_callout(
+                    review.get("content", ""),  # 想法使用content字段
+                    review.get("style", 0),
+                    review.get("colorStyle", 0),
+                    review.get("reviewId", "")
+                )
+                children.append(callout)
+                
+                # 处理想法的摘要
+                abstract = review.get("abstract")
+                if abstract and abstract.strip():
+                    quote = get_quote(abstract)
+                    grandchild[len(children)-1] = quote
     
     # 添加点评部分
     if summary and len(summary) > 0:
@@ -1022,7 +912,7 @@ def main(weread_token, notion_token, database_id):
 
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)
 
-                    chapter = get_chapter_info(session,book_id,weread_token)
+                    # chapter = get_chapter_info(session,book_id,weread_token)
                     
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     bookmark_list.extend(reviews)
@@ -1046,7 +936,7 @@ def main(weread_token, notion_token, database_id):
                             break
                         continue
                     
-                    print(f"✅ 成功生成 :{children}")
+                    print(f"✅ 成功生成 :{grandchild}")
                     # break
                     # isbn,rating = get_bookinfo(session,book_id)
 
