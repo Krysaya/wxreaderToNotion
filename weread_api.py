@@ -218,7 +218,6 @@ def get_existing_note_ids(notion_token,page_id):
         print(f"获取0r : {results[0]} ")
 
         for i, block in enumerate(results):
-            print(f"  - 块ID: {block} b类型：{(block)}")
 
             block_type = block.get("type")
             block_id = block.get("id")
@@ -797,7 +796,6 @@ def get_children(bookmark_list, summary,reviews):
         
      # 处理想法 (reviews)
     if reviews and len(reviews) > 0:
-        print(f"✅ 添加想法，数量: {len(reviews)}")
         children.append(get_heading(1, "想法"))
         
         # 按章节分组想法
@@ -813,7 +811,8 @@ def get_children(bookmark_list, summary,reviews):
         
         # 按chapterIdx排序
         sorted_review_chapters = sorted(review_chapter_data.items(), key=lambda x: x[1]["reviews"][0].get("chapterIdx", 0))
-        
+        print(f"想法排序==: {sorted_review_chapters} ")
+
         for chapterUid, chapter_info in sorted_review_chapters:
             # 添加想法章节标题
             chapter_title = chapter_info["chapterName"]
@@ -837,7 +836,6 @@ def get_children(bookmark_list, summary,reviews):
     
     # 添加点评部分
     if summary and len(summary) > 0:
-        print(f"✅ 添加点评，数量: {len(summary)}")
         children.append(get_heading(1, "点评"))
         for i in summary:
             review_content = i.get("review", {}).get("content", "")
@@ -849,7 +847,7 @@ def get_children(bookmark_list, summary,reviews):
                     i.get("review", {}).get("reviewId", "")
                 ))
     
-    print(f"✅ 最终生成的children数量: {len(children)}")
+    print(f"✅ 最终生成的children {children} grandchildren:{grandchild}")
     return children, grandchild
 
 def main(weread_token, notion_token, database_id):
@@ -923,11 +921,11 @@ def main(weread_token, notion_token, database_id):
                     # 2. 获取该页面上已存在的笔记ID
                     existing_note_ids = get_existing_note_ids(notion_token, existing_page_id)
                     print(f"🔄 书籍已存在ID,更新内容: {existing_note_ids}")
-                    return
-                    # 构建内容
-                    print(f"🔨 构建内容结构...")
-                    children, grandchild = get_children(bookmark_list, summary, reviews)
                     
+                    # 构建内容
+
+                    children, grandchild = get_children(bookmark_list, summary, reviews)
+                    return
                     # 检查是否有内容生成
                     if not children:
                         print(f"❌ 没有生成任何内容块，跳过书籍: {title}")
