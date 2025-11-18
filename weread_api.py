@@ -759,6 +759,8 @@ def get_children(bookmark_list, summary,reviews):
     # 按章节UID分组笔记
     chapter_data = {}
     for data in bookmark_list:
+        print(f"☺️======= {data} ")
+
         chapterUid = data.get("chapterUid")
         if chapterUid not in chapter_data:
             chapter_data[chapterUid] = {
@@ -768,7 +770,7 @@ def get_children(bookmark_list, summary,reviews):
             }
         chapter_data[chapterUid]["notes"].append(data)
     
-    print(f"🔍 找到 {len(chapter_data)} 个章节")
+    # print(f"🔍 找到 {len(chapter_data)} 个章节")
     
     # 按章节索引排序
     sorted_chapters = sorted(chapter_data.items(), key=lambda x: x[1]["chapterIdx"])
@@ -776,6 +778,8 @@ def get_children(bookmark_list, summary,reviews):
     # 处理每个章节
     for chapterUid, chapter_info in sorted_chapters:
         # 添加章节标题
+        print(f"✅ 章节信息: {chapter_info}")
+
         chapter_title = chapter_info["chapterName"]
         level = 2  # 默认使用二级标题
         
@@ -784,14 +788,14 @@ def get_children(bookmark_list, summary,reviews):
         print(f"✅ 已添加章节标题: {chapter_title}")
         
         # 添加该章节下的所有笔记
-        for note in reviews:
-            callout = get_callout(
-                note.get("markText", ""), 
-                note.get("style", 0), 
-                note.get("colorStyle", 0), 
-                note.get("bookmarkId", "")
-            )
-            children.append(callout)
+        # for note in reviews:
+        #     callout = get_callout(
+        #         note.get("markText", ""), 
+        #         note.get("style", 0), 
+        #         note.get("colorStyle", 0), 
+        #         note.get("bookmarkId", "")
+        #     )
+        #     children.append(callout)
             
         
      # 处理想法 (reviews)
@@ -847,7 +851,7 @@ def get_children(bookmark_list, summary,reviews):
                     i.get("review", {}).get("reviewId", "")
                 ))
     
-    print(f"✅ 最终生成的children {children} grandchildren:{grandchild}")
+    print(f"✅ 最终生成的children {children} 🍉grandchildren:{grandchild}")
     return children, grandchild
 
 def main(weread_token, notion_token, database_id):
