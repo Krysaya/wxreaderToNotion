@@ -917,7 +917,7 @@ def main(weread_token, notion_token, database_id):
                         0 if x.get("range", "") == "" else int(x.get("range").split("-")[0])
                     ))
                     # 2. 获取该页面上已存在的笔记ID
-                    existing_note_ids = get_existing_note_ids(notion_token, page_id)
+                    existing_note_ids = get_existing_note_ids(notion_token, existing_page_id)
                     print(f"🔄 书籍已存在ID,更新内容: {existing_note_ids}")
                     return
                     # 构建内容
