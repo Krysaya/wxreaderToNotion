@@ -214,7 +214,7 @@ def get_existing_note_ids(notion_token,page_id):
     try:
         # 获取页面所有块
         blocks = get_pages(page_id, notion_token)
-        print(f"🔍 共获取到 {len(blocks)} 个块")
+        print(f"获取 : {blocks} ")
         
         for i, block in enumerate(blocks):
             block_type = block.get("type")
