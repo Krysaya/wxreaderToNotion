@@ -214,12 +214,15 @@ def get_existing_note_ids(notion_token,page_id):
     try:
         # 获取页面所有块
         blocks = get_pages(page_id, notion_token)
-        print(f"获取 : {blocks} ")
-        
-        for i, block in enumerate(blocks):
+        results = blocks['results']
+        print(f"获取0r : {results[0]} ")
+
+        for i, block in enumerate(results):
+            print(f"  - 块ID: {block} b类型：{(block)}")
+
             block_type = block.get("type")
             block_id = block.get("id")
-            print(f"  - 块ID: {block_id}, 类型: {block_type}")
+            print(f" == - 块ID: {block_id}, 类型: {block_type}")
 
             # 只处理callout类型的块（你的笔记块）
             if block_type == "callout":
