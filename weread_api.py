@@ -674,11 +674,14 @@ def get_quote(content):
                     "content": content
                 },
             }],
+            "icon": {
+                "emoji": "💡"
+            },
             "color": "default"
         }
     }
 
-def get_callout(content, style, colorStyle, reviewId):
+def get_callout(content, style, colorStyle, reviewId,callout_content):
 #     # 根据不同的划线样式设置不同的emoji 直线type=0 背景颜色是1 波浪线是2
     emoji = "🌟"
     if style == 0:
@@ -709,9 +712,7 @@ def get_callout(content, style, colorStyle, reviewId):
                     "content": content,
                 }
             }],
-#             "icon": {
-#                 "emoji": emoji
-#             },
+            "callout": get_quote(callout_content),
             "color": color
         }
     }
@@ -754,23 +755,19 @@ def get_children(bookmark_list, summary,reviews):
     
     # 添加目录
     children.append(get_table_of_contents())
-    print("✅ 已添加目录")
     
     # 按章节UID分组笔记
     chapter_data = {}
     for data in bookmark_list:
-        print(f"☺️======= {data} ")
 
         chapterUid = data.get("chapterUid")
         if chapterUid not in chapter_data:
             chapter_data[chapterUid] = {
-                "chapterName": data.get("title", "未知章节"),
+                "chapterName": data.get("chapterName", "未知章节"),
                 "chapterIdx": data.get("chapterIdx", 0),
                 "notes": []
             }
         chapter_data[chapterUid]["notes"].append(data)
-    
-    # print(f"🔍 找到 {len(chapter_data)} 个章节")
     
     # 按章节索引排序
     sorted_chapters = sorted(chapter_data.items(), key=lambda x: x[1]["chapterIdx"])
@@ -779,23 +776,23 @@ def get_children(bookmark_list, summary,reviews):
     for chapterUid, chapter_info in sorted_chapters:
         # 添加章节标题
         print(f"✅ 章节信息: {chapter_info}")
-
+# review = reviews
         chapter_title = chapter_info["chapterName"]
         level = 2  # 默认使用二级标题
         
         heading_block = get_heading(level, chapter_title)
         children.append(heading_block)
-        print(f"✅ 已添加章节标题: {chapter_title}")
+        # print(f"✅ 已添加章节标题: {chapter_title}")
         
-        # 添加该章节下的所有笔记
-        # for note in reviews:
-        #     callout = get_callout(
-        #         note.get("markText", ""), 
-        #         note.get("style", 0), 
-        #         note.get("colorStyle", 0), 
-        #         note.get("bookmarkId", "")
-        #     )
-        #     children.append(callout)
+        # 添加该章节下的所有【划线】
+        for note in reviews:
+            callout = get_callout(
+                note.get("markText", ""), 
+                note.get("style", 0), 
+                note.get("colorStyle", 0), 
+                note.get("bookmarkId", "")
+            )
+            children.append(callout)
             
         
      # 处理想法 (reviews)
@@ -815,7 +812,6 @@ def get_children(bookmark_list, summary,reviews):
         
         # 按chapterIdx排序
         sorted_review_chapters = sorted(review_chapter_data.items(), key=lambda x: x[1]["reviews"][0].get("chapterIdx", 0))
-        print(f"想法排序==: {sorted_review_chapters} ")
 
         for chapterUid, chapter_info in sorted_review_chapters:
             # 添加想法章节标题
@@ -824,20 +820,18 @@ def get_children(bookmark_list, summary,reviews):
             
             # 添加该章节的想法
             for review in chapter_info["reviews"]:
-                callout = get_callout(
-                    review.get("content", ""),  # 想法使用content字段
-                    review.get("style", 0),
-                    review.get("colorStyle", 0),
-                    review.get("reviewId", "")
+                callout = get_quote(
+                    review.get("content", "")
                 )
                 children.append(callout)
                 
                 # 处理想法的摘要
-                abstract = review.get("abstract")
-                if abstract and abstract.strip():
-                    quote = get_quote(abstract)
-                    grandchild[len(children)-1] = quote
-    
+                # abstract = review.get("abstract")
+                # if abstract and abstract.strip():
+                #     quote = get_quote(abstract)
+                #     grandchild[len(children)-1] = quote
+
+
     # 添加点评部分
     if summary and len(summary) > 0:
         children.append(get_heading(1, "点评"))
@@ -851,7 +845,7 @@ def get_children(bookmark_list, summary,reviews):
                     i.get("review", {}).get("reviewId", "")
                 ))
     
-    print(f"✅ 最终生成的children {children} 🍉grandchildren:{grandchild}")
+    print(f"✅ 最终生成的 🍉grandchildren:{grandchild}")
     return children, grandchild
 
 def main(weread_token, notion_token, database_id):
@@ -916,7 +910,8 @@ def main(weread_token, notion_token, database_id):
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)                    
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     bookmark_list.extend(reviews)
-                    
+                    print(f"✅ reviews=-==: {reviews}")
+                    return
                     # 排序内容
                     bookmark_list = sorted(bookmark_list, key=lambda x: (
                         x.get("chapterUid", 1), 
@@ -929,7 +924,7 @@ def main(weread_token, notion_token, database_id):
                     # 构建内容
 
                     children, grandchild = get_children(bookmark_list, summary, reviews)
-                    return
+                    
                     # 检查是否有内容生成
                     if not children:
                         print(f"❌ 没有生成任何内容块，跳过书籍: {title}")
