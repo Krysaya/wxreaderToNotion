@@ -681,7 +681,7 @@ def get_quote(content):
         }
     }
 
-def get_callout(content, style, colorStyle, reviewId,callout_content):
+def get_callout(content, style, colorStyle, reviewId):
 #     # 根据不同的划线样式设置不同的emoji 直线type=0 背景颜色是1 波浪线是2
     emoji = "🌟"
     if style == 0:
@@ -712,7 +712,7 @@ def get_callout(content, style, colorStyle, reviewId,callout_content):
                     "content": content,
                 }
             }],
-            "callout": get_quote(callout_content),
+            # "callout": get_quote(callout_content),
             "color": color
         }
     }
@@ -765,38 +765,73 @@ def get_children(bookmark_list, summary,reviews):
             chapter_data[chapterUid] = {
                 "chapterName": data.get("chapterName", "未知章节"),
                 "chapterIdx": data.get("chapterIdx", 0),
-                "notes": []
+                "notes": [],
+                
             }
-        chapter_data[chapterUid]["notes"].append(data)
-    
+        chapter_data[chapterUid]["notes"].append({
+            "chapterName": data.get("chapterName", "未知章节"),
+            "chapterIdx": data.get("chapterIdx", 0),
+            "markText": data.get("markText", ""),
+            "style": data.get("style", 0),
+            "colorStyle": data.get("colorStyle", 0),
+            "bookmarkId": data.get("bookmarkId", ""),
+            "range": data.get("range", ""),
+            "reviews": []  # 这个划线笔记对应的想法评论
+        })
+
+    for review in reviews:
+            chapterUid = review.get("chapterUid", 1)
+            # 查找相同章节和范围的划线笔记
+            if chapterUid in chapter_data:        
+                for notes in chapter_data[chapterUid]["notes"]:
+                    if (review.get["abstract"] == notes["markText"] 
+                        or review.get["chapterTitle"] == notes["chapterName"]):
+                        notes["reviews"].append({
+                            "content": review.get("content", ""),
+
+                        })
+                        break
+
+    #         chapter_data[chapterUid]["reviews"].append(review)
+        
+    print(f"组合📚====--: {chapter_data}")
     # 按章节索引排序
     sorted_chapters = sorted(chapter_data.items(), key=lambda x: x[1]["chapterIdx"])
     
     # 处理每个章节
     for chapterUid, chapter_info in sorted_chapters:
         # 添加章节标题
-        print(f"✅ 划线信息: {reviews}")
-        
-        abstract = reviews["abstract"]
+       
         chapter_title = chapter_info["chapterName"]
         level = 2  # 默认使用二级标题
         
         heading_block = get_heading(level, chapter_title)
         children.append(heading_block)
         
-        # 添加该章节下的所有【划线】
-        for note in reviews:
-            print(f"🍉 reviews==: {note}")
+        # # 添加该章节下的所有【划线】
+        
+        for note in chapter_info["notes"]:
+            # print(f"🍉 reviews==: {note}")
 
             callout = get_callout(
                 note.get("markText", ""), 
                 note.get("style", 0), 
                 note.get("colorStyle", 0), 
                 note.get("bookmarkId", ""),
-                note.get("abstract","")
             )
             children.append(callout)
-            
+            quote = get_quote(
+                
+            )
+         # # 添加该章节下的所有【划线评论】
+        
+        # for review in chapter_info["reviews"]:
+        #     print(f"🍉 reviews==: {review}")
+
+        #     callout = get_quote(
+        #         note.get("abstract", "")
+        #     )
+        #     children.append(callout)    
         
      # 处理想法 (reviews)
     # if reviews and len(reviews) > 0:
@@ -828,11 +863,11 @@ def get_children(bookmark_list, summary,reviews):
     #             )
     #             children.append(callout)
                 
-    #             # 处理想法的摘要
-    #             # abstract = review.get("abstract")
-    #             # if abstract and abstract.strip():
-    #             #     quote = get_quote(abstract)
-    #             #     grandchild[len(children)-1] = quote
+                # 处理想法的摘要
+                # abstract = review.get("abstract")
+                # if abstract and abstract.strip():
+                #     quote = get_quote(abstract)
+                #     grandchild[len(children)-1] = quote
 
 
     # 添加点评部分
