@@ -754,7 +754,7 @@ def get_children(bookmark_list, summary,reviews):
     
     # 添加目录
     children.append(get_table_of_contents())
-    print(f"笔记📒====--: {bookmark_list}")
+    # print(f"笔记📒====--: {bookmark_list}")
 
     # 按章节UID分组笔记
     chapter_data = {}
@@ -766,36 +766,48 @@ def get_children(bookmark_list, summary,reviews):
             chapter_data[chapterUid] = {
                 "chapterName": data.get("chapterName", "未知章节"),
                 "chapterIdx": data.get("chapterIdx", 0),
+                "reviews": [],  # 章节想法
                 "notes": [],
-                
             }
-        chapter_data[chapterUid]["notes"].append({
-            "chapterName": data.get("chapterName", "未知章节"),
-            "chapterIdx": data.get("chapterIdx", 0),
-            "markText": data.get("markText", ""),
-            "style": data.get("style", 0),
-            "colorStyle": data.get("colorStyle", 0),
-            "bookmarkId": data.get("bookmarkId", ""),
-            "range": data.get("range", ""),
-            "reviews": [],  # 这个划线笔记对应的想法评论
-        })
+        if "author" not in data:
+               
+            chapter_data[chapterUid]["notes"].append({
+                "chapterName": data.get("chapterName", "未知章节"),
+                "chapterIdx": data.get("chapterIdx", 0),
+                "markText": data.get("markText", ""),
+                "style": data.get("style", 0),
+                "colorStyle": data.get("colorStyle", 0),
+                "bookmarkId": data.get("bookmarkId", ""),
+                "range": data.get("range", ""),
+                "reviews": [],  # 这个划线笔记对应的想法评论
+            })
+        # else:
+        #     if "abstract" not in data:
+        #         chapter_data[chapterUid]["reviews"].append({
+        #             "markText": data.get("markText", ""),
+        #             # 章节想法
+        #         })
+            
+
 
     for review in reviews:
             chapterUid = review.get("chapterUid", 1)
             # 查找相同章节和范围的划线笔记
-            if chapterUid in chapter_data:        
-                for notes in chapter_data[chapterUid]["notes"]:
-                    print(f"📚====-review-: {review}")
+            if chapterUid in chapter_data:     
+                if "abstract" not in review:
+                    chapter_data[chapterUid]["reviews"].append({
+                        "content": data.get("content", ""),
+                    # 章节想法
+                })
+                else:
+                    for notes in chapter_data[chapterUid]["notes"]:
 
-                    if (review.get("abstract") == notes["markText"] or review.get("chapterTitle") == notes["chapterName"]):
-                        notes["reviews"].append({
-                            "content": review.get("content", "")
-                        })
+                        if (review.get("abstract") == notes["markText"]):
+                            notes["reviews"].append({
+                                "content": review.get("content", "")
+                            })
                     
-                        
-
-    #         chapter_data[chapterUid]["reviews"].append(review)
-        
+                                
     print(f"组合📚====--: {chapter_data}")
     # 按章节索引排序
     sorted_chapters = sorted(chapter_data.items(), key=lambda x: x[1]["chapterIdx"])
