@@ -776,7 +776,8 @@ def get_children(bookmark_list, summary,reviews):
     for chapterUid, chapter_info in sorted_chapters:
         # 添加章节标题
         print(f"✅ 章节信息: {chapter_info}")
-# review = reviews
+        
+        abstract = reviews["abstract"]
         chapter_title = chapter_info["chapterName"]
         level = 2  # 默认使用二级标题
         
@@ -790,7 +791,8 @@ def get_children(bookmark_list, summary,reviews):
                 note.get("markText", ""), 
                 note.get("style", 0), 
                 note.get("colorStyle", 0), 
-                note.get("bookmarkId", "")
+                note.get("bookmarkId", ""),
+                note.get()
             )
             children.append(callout)
             
