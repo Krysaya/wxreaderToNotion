@@ -775,7 +775,7 @@ def get_children(bookmark_list, summary,reviews):
     # 处理每个章节
     for chapterUid, chapter_info in sorted_chapters:
         # 添加章节标题
-        # print(f"✅ 章节信息: {chapter_info}")
+        print(f"✅ 划线信息: {reviews}")
         
         abstract = reviews["abstract"]
         chapter_title = chapter_info["chapterName"]
@@ -793,7 +793,7 @@ def get_children(bookmark_list, summary,reviews):
                 note.get("style", 0), 
                 note.get("colorStyle", 0), 
                 note.get("bookmarkId", ""),
-                note.get("content","")
+                note.get("abstract","")
             )
             children.append(callout)
             
