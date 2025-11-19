@@ -758,6 +758,7 @@ def get_children(bookmark_list, summary,reviews):
     # 按章节UID分组笔记
     chapter_data = {}
     for data in bookmark_list:
+        # print(f"📚====-uid===notes-: {data}")
 
         chapterUid = data.get("chapterUid")
         if chapterUid not in chapter_data:
@@ -777,7 +778,6 @@ def get_children(bookmark_list, summary,reviews):
             "range": data.get("range", ""),
             "reviews": [],  # 这个划线笔记对应的想法评论
         })
-    print(f"📚====-uid===notes-: {chapter_data[chapterUid]["notes"]}")
 
     for review in reviews:
             chapterUid = review.get("chapterUid", 1)
@@ -786,7 +786,7 @@ def get_children(bookmark_list, summary,reviews):
                 for notes in chapter_data[chapterUid]["notes"]:
                     print(f"📚====-review-: {review}")
 
-                    if (review.get("abstract") == notes["markText"] and review.get("chapterTitle") == notes["chapterName"]):
+                    if (review.get("abstract") == notes["markText"] or review.get("chapterTitle") == notes["chapterName"]):
                         notes["reviews"].append({
                             "content": review.get("content", "")
                         })
