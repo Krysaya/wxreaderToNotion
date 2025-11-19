@@ -783,14 +783,13 @@ def get_children(bookmark_list, summary,reviews):
             # 查找相同章节和范围的划线笔记
             if chapterUid in chapter_data:        
                 for notes in chapter_data[chapterUid]["notes"]:
-                    print(f"📚====-notes-: {notes}")
+                    print(f"📚====-review-: {review}")
 
-                    if (review.get["abstract"] == notes["markText"] 
-                        or review.get["chapterTitle"] == notes["chapterName"]):
+                    if (review.get["abstract"] == notes["markText"] and review.get["chapterTitle"] == notes["chapterName"]):
                         notes["reviews"].append({
                             "content": review.get("content", ""),
-
                         })
+                    
                         
 
     #         chapter_data[chapterUid]["reviews"].append(review)
