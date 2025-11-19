@@ -775,7 +775,7 @@ def get_children(bookmark_list, summary,reviews):
     # 处理每个章节
     for chapterUid, chapter_info in sorted_chapters:
         # 添加章节标题
-        print(f"✅ 章节信息: {chapter_info}")
+        # print(f"✅ 章节信息: {chapter_info}")
         
         abstract = reviews["abstract"]
         chapter_title = chapter_info["chapterName"]
@@ -783,10 +783,11 @@ def get_children(bookmark_list, summary,reviews):
         
         heading_block = get_heading(level, chapter_title)
         children.append(heading_block)
-        # print(f"✅ 已添加章节标题: {chapter_title}")
         
         # 添加该章节下的所有【划线】
         for note in reviews:
+            print(f"🍉 reviews==: {note}")
+
             callout = get_callout(
                 note.get("markText", ""), 
                 note.get("style", 0), 
