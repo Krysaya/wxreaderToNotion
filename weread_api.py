@@ -792,46 +792,46 @@ def get_children(bookmark_list, summary,reviews):
                 note.get("style", 0), 
                 note.get("colorStyle", 0), 
                 note.get("bookmarkId", ""),
-                note.get()
+                note.get("content","")
             )
             children.append(callout)
             
         
      # 处理想法 (reviews)
-    if reviews and len(reviews) > 0:
-        children.append(get_heading(1, "想法"))
+    # if reviews and len(reviews) > 0:
+    #     children.append(get_heading(1, "想法"))
         
-        # 按章节分组想法
-        review_chapter_data = {}
-        for review in reviews:
-            chapterUid = review.get("chapterUid", 1)
-            if chapterUid not in review_chapter_data:
-                review_chapter_data[chapterUid] = {
-                    "chapterName": review.get("chapterName", f"章节{chapterUid}"),
-                    "reviews": []
-                }
-            review_chapter_data[chapterUid]["reviews"].append(review)
+    #     # 按章节分组想法
+    #     review_chapter_data = {}
+    #     for review in reviews:
+    #         chapterUid = review.get("chapterUid", 1)
+    #         if chapterUid not in review_chapter_data:
+    #             review_chapter_data[chapterUid] = {
+    #                 "chapterName": review.get("chapterName", f"章节{chapterUid}"),
+    #                 "reviews": []
+    #             }
+    #         review_chapter_data[chapterUid]["reviews"].append(review)
         
-        # 按chapterIdx排序
-        sorted_review_chapters = sorted(review_chapter_data.items(), key=lambda x: x[1]["reviews"][0].get("chapterIdx", 0))
+    #     # 按chapterIdx排序
+    #     sorted_review_chapters = sorted(review_chapter_data.items(), key=lambda x: x[1]["reviews"][0].get("chapterIdx", 0))
 
-        for chapterUid, chapter_info in sorted_review_chapters:
-            # 添加想法章节标题
-            chapter_title = chapter_info["chapterName"]
-            children.append(get_heading(3, f"{chapter_title} - 想法"))
+    #     for chapterUid, chapter_info in sorted_review_chapters:
+    #         # 添加想法章节标题
+    #         chapter_title = chapter_info["chapterName"]
+    #         children.append(get_heading(3, f"{chapter_title} - 想法"))
             
-            # 添加该章节的想法
-            for review in chapter_info["reviews"]:
-                callout = get_quote(
-                    review.get("content", "")
-                )
-                children.append(callout)
+    #         # 添加该章节的想法
+    #         for review in chapter_info["reviews"]:
+    #             callout = get_quote(
+    #                 review.get("content", "")
+    #             )
+    #             children.append(callout)
                 
-                # 处理想法的摘要
-                # abstract = review.get("abstract")
-                # if abstract and abstract.strip():
-                #     quote = get_quote(abstract)
-                #     grandchild[len(children)-1] = quote
+    #             # 处理想法的摘要
+    #             # abstract = review.get("abstract")
+    #             # if abstract and abstract.strip():
+    #             #     quote = get_quote(abstract)
+    #             #     grandchild[len(children)-1] = quote
 
 
     # 添加点评部分
@@ -847,7 +847,7 @@ def get_children(bookmark_list, summary,reviews):
                     i.get("review", {}).get("reviewId", "")
                 ))
     
-    print(f"✅ 最终生成的 🍉grandchildren:{grandchild}")
+    print(f"✅ 最终生成的=== :{children}")
     return children, grandchild
 
 def main(weread_token, notion_token, database_id):
@@ -912,8 +912,8 @@ def main(weread_token, notion_token, database_id):
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)                    
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     bookmark_list.extend(reviews)
-                    print(f"✅ reviews=-==: {reviews}")
-                    return
+                    # print(f"✅ reviews=-==: {reviews}")
+                    
                     # 排序内容
                     bookmark_list = sorted(bookmark_list, key=lambda x: (
                         x.get("chapterUid", 1), 
@@ -926,7 +926,7 @@ def main(weread_token, notion_token, database_id):
                     # 构建内容
 
                     children, grandchild = get_children(bookmark_list, summary, reviews)
-                    
+                    return
                     # 检查是否有内容生成
                     if not children:
                         print(f"❌ 没有生成任何内容块，跳过书籍: {title}")
