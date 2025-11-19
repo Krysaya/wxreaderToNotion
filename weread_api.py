@@ -775,7 +775,7 @@ def get_children(bookmark_list, summary,reviews):
             "colorStyle": data.get("colorStyle", 0),
             "bookmarkId": data.get("bookmarkId", ""),
             "range": data.get("range", ""),
-            "reviews": []  # 这个划线笔记对应的想法评论
+            "reviews": [],  # 这个划线笔记对应的想法评论
         })
 
     for review in reviews:
@@ -785,9 +785,9 @@ def get_children(bookmark_list, summary,reviews):
                 for notes in chapter_data[chapterUid]["notes"]:
                     print(f"📚====-review-: {review}")
 
-                    if (review.get["abstract"] == notes["markText"] and review.get["chapterTitle"] == notes["chapterName"]):
+                    if (review.get("abstract") == notes["markText"] and review.get("chapterTitle") == notes["chapterName"]):
                         notes["reviews"].append({
-                            "content": review.get("content", ""),
+                            "content": review.get("content", "")
                         })
                     
                         
