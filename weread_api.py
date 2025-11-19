@@ -790,7 +790,7 @@ def get_children(bookmark_list, summary,reviews):
                             "content": review.get("content", ""),
 
                         })
-                        break
+                        
 
     #         chapter_data[chapterUid]["reviews"].append(review)
         
