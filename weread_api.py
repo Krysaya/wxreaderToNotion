@@ -799,7 +799,7 @@ def get_children(bookmark_list, summary,reviews):
                     if (review.get("chapterName") == chapter_data[chapterUid]["chapterName"]):
 
                         chapter_data[chapterUid]["reviews"].append({
-                            "content": data.get("content", ""),
+                            "content": review.get("content", ""),
                             # 章节想法
                         })
                 else:
