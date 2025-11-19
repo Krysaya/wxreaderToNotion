@@ -796,7 +796,7 @@ def get_children(bookmark_list, summary,reviews):
             if chapterUid in chapter_data:     
                 if "abstract" not in review:
                     
-                    if (review.get("chapterName") == chapter_data["chapterName"]):
+                    if (review.get("chapterName") == chapter_data[chapterUid]["chapterName"]):
 
                         chapter_data[chapterUid]["reviews"].append({
                             "content": data.get("content", ""),
