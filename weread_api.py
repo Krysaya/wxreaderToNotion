@@ -680,7 +680,7 @@ def get_quote(content):
         }
     }
 
-def get_callout(content, style, colorStyle, reviewId):
+def get_callout(content, style, colorStyle, reviewId,review_callout):
 #     # 根据不同的划线样式设置不同的emoji 直线type=0 背景颜色是1 波浪线是2
     emoji = "🌟"
     if style == 0:
@@ -711,7 +711,7 @@ def get_callout(content, style, colorStyle, reviewId):
                     "content": content,
                 }
             }],
-            # "callout": get_quote(callout_content),
+            "callout": get_quote(review_callout),
             "color": color
         }
     }
@@ -811,7 +811,7 @@ def get_children(bookmark_list, summary,reviews):
                             })
                     
                                 
-    print(f"组合📚====--: {chapter_data}")
+    # print(f"组合📚====--: {chapter_data}")
     # 按章节索引排序
     sorted_chapters = sorted(chapter_data.items(), key=lambda x: x[1]["chapterIdx"])
     
@@ -824,7 +824,12 @@ def get_children(bookmark_list, summary,reviews):
         
         heading_block = get_heading(level, chapter_title)
         children.append(heading_block)
-        
+        for reviews in chapter_info["reviews"]:
+            quote = get_quote(
+                reviews.get("content","")
+            )
+            children.append(quote)
+
         # # 添加该章节下的所有【划线】
         
         for note in chapter_info["notes"]:
@@ -835,11 +840,14 @@ def get_children(bookmark_list, summary,reviews):
                 note.get("style", 0), 
                 note.get("colorStyle", 0), 
                 note.get("bookmarkId", ""),
+
             )
             children.append(callout)
-            quote = get_quote(
-                
+            for rev in note["reviews"]]
+                quote = get_quote(
+                reviews.get("content","")
             )
+            children.append(quote)
          # # 添加该章节下的所有【划线评论】
         
         # for review in chapter_info["reviews"]:
