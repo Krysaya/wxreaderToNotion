@@ -754,7 +754,8 @@ def get_children(bookmark_list, summary,reviews):
     
     # 添加目录
     children.append(get_table_of_contents())
-    
+    print(f"笔记📒====--: {bookmark_list}")
+
     # 按章节UID分组笔记
     chapter_data = {}
     for data in bookmark_list:
