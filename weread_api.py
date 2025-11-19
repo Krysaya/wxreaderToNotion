@@ -795,10 +795,13 @@ def get_children(bookmark_list, summary,reviews):
             # 查找相同章节和范围的划线笔记
             if chapterUid in chapter_data:     
                 if "abstract" not in review:
-                    chapter_data[chapterUid]["reviews"].append({
-                        "content": data.get("content", ""),
-                    # 章节想法
-                })
+                    
+                    if (review.get("chapterName") == chapter_data["chapterName"]):
+
+                        chapter_data[chapterUid]["reviews"].append({
+                            "content": data.get("content", ""),
+                            # 章节想法
+                        })
                 else:
                     for notes in chapter_data[chapterUid]["notes"]:
 
