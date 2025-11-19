@@ -777,6 +777,7 @@ def get_children(bookmark_list, summary,reviews):
             "range": data.get("range", ""),
             "reviews": [],  # 这个划线笔记对应的想法评论
         })
+    print(f"📚====-uid===notes-: {chapter_data[chapterUid]["notes"]}")
 
     for review in reviews:
             chapterUid = review.get("chapterUid", 1)
