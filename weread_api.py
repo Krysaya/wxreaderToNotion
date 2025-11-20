@@ -452,10 +452,9 @@ def get_bookshelf(session):
         data = {}
         response = session.get(WEREAD_NOTEBOOKS_URL, headers=headers)
         if response.status_code == 200:
-            r = response.json()
-            data = r["book"]
-            print(f"book===: {data}")
-            return r
+            r = response.json()["book"]
+            print(f"book===: {r}")
+            return response.json()
         else:
             print(f"获取书架失败: {response.status_code} - {response.text}")
             return None
