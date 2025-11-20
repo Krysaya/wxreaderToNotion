@@ -831,7 +831,7 @@ def get_children(bookmark_list, summary,reviews):
             children.append(quote)
 
         # # 添加该章节下的所有【划线】
-        
+     
         for note in chapter_info["notes"]:
             # print(f"🍉 reviews==: {note}")
 
@@ -843,7 +843,10 @@ def get_children(bookmark_list, summary,reviews):
 
             )
             children.append(callout)
-            for rev in note["reviews"]]
+            
+            for rev in note["reviews"]:
+                if not isinstance(rev, str):
+                    continue
                 quote = get_quote(
                 rev.get("content","")
             )
