@@ -443,7 +443,7 @@ def get_bookshelf(session,wx_cookie):
         headers = get_headers(wx_cookie)       
         response = session.get(WEREAD_NOTEBOOKS_URL, headers=headers)
         if response.status_code == 200:
-            r = response.json()["book"]
+            r = response.json()["books"]
             print(f"book===: {r}")
             return response.json()
         else:
