@@ -455,7 +455,7 @@ def get_bookshelf(session):
             r = response.json()
             data = r["book"]
             print(f"book===: {data}")
-            return data
+            return r
         else:
             print(f"获取书架失败: {response.status_code} - {response.text}")
             return None
@@ -939,17 +939,15 @@ def main(weread_token, notion_token, database_id):
         session.cookies.update(parse_cookie_string(weread_token))
         
 
-        # 原有的同步逻辑，但现在数据获取函数会自己处理Cookie刷新
         latest_sort = get_sort(database_id, notion_token)
         if latest_sort is None:
-            print("❌ 获取排序值失败，停止同步")
+            print("获取排序值失败，停止同步")
             exit(1)
 
         # 获取微信读书书架
-        print("获取微信读书书架...")
         bookshelf = get_bookshelf(session)
         if not bookshelf:
-            print("❌ 获取书架失败，停止同步")
+            print(" 获取书架失败，停止同步")
             return
 
         books = bookshelf.get('books', [])
@@ -976,7 +974,7 @@ def main(weread_token, notion_token, database_id):
                 continue
                 
             title = book.get('title', '未知标题')
-            # print(f"book==: {book}")
+            print(f"📚书名==: {title}")
             print(f"\n正在处理 [{i+1}/{len(books)}]: {title}")
             
             # 检查书籍是否已存在
