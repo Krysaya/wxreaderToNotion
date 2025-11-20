@@ -845,7 +845,7 @@ def get_children(bookmark_list, summary,reviews):
             children.append(callout)
             for rev in note["reviews"]]
                 quote = get_quote(
-                reviews.get("content","")
+                rev.get("content","")
             )
             children.append(quote)
          # # 添加该章节下的所有【划线评论】
@@ -973,7 +973,6 @@ def main(weread_token, notion_token, database_id):
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)                    
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     bookmark_list.extend(reviews)
-                    # print(f"✅ reviews=-==: {reviews}")
                     
                     # 排序内容
                     bookmark_list = sorted(bookmark_list, key=lambda x: (
@@ -987,7 +986,7 @@ def main(weread_token, notion_token, database_id):
                     # 构建内容
 
                     children, grandchild = get_children(bookmark_list, summary, reviews)
-                    return
+                    
                     # 检查是否有内容生成
                     if not children:
                         print(f"❌ 没有生成任何内容块，跳过书籍: {title}")
@@ -1022,17 +1021,7 @@ def main(weread_token, notion_token, database_id):
                     
                     # 获取划线列表
                     print(f"📝 获取划线列表...")
-                    bookmark_list = get_bookmark_list(session,book_id,weread_token)
-                    if bookmark_list is None:
-                        print(f"❌ 获取划线列表失败: {title}")
-                        error_count += 1
-                        if error_count >= max_errors:
-                            print("❌ 错误次数超过限制，停止同步")
-                            break
-                        continue
-                    
-                    # 获取笔记和评论
-                    print(f"💭 获取笔记和评论...")
+                    bookmark_list = get_bookmark_list(session,book_id,weread_token)                    
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     bookmark_list.extend(reviews)
                     
@@ -1041,11 +1030,12 @@ def main(weread_token, notion_token, database_id):
                         x.get("chapterUid", 1), 
                         0 if x.get("range", "") == "" else int(x.get("range").split("-")[0])
                     ))
+                    # 2. 获取该页面上已存在的笔记ID
+                    existing_note_ids = get_existing_note_ids(notion_token, existing_page_id)
+                    print(f"🔄 书籍已存在ID,更新内容: {existing_note_ids}")
                     
-                    # 获取书籍详细信息
-                    # isbn, rating = get_bookinfo(session,book_id)
-                    
-                    # 构建内容结构
+                    # 构建内容
+
                     children, grandchild = get_children(bookmark_list, summary, reviews)
                     # 检查是否有内容生成
                     if not children:
@@ -1060,8 +1050,8 @@ def main(weread_token, notion_token, database_id):
 
                     # 创建Notion页面 - 使用原有的add_book_to_notion函数
                     print(f"🔄 创建Notion页面...")
-                    page_id = insert_to_notion(session,title, book_id, book.get('cover', ''), latest_sort, 
-                                            book.get('author', '') , database_id, notion_token)
+                    page_id = insert_to_notion(session,title, book_id, book.get('cover', 'no'), latest_sort, 
+                                            book.get('author', '未知') , database_id, notion_token)
                     if not page_id:
                         print(f"❌ 创建Notion页面失败: {title}")
                         error_count += 1
