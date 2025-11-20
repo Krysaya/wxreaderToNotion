@@ -462,6 +462,18 @@ def get_bookshelf(session):
     except Exception as e:
         print(f"获取书架时出错: {e}")
         return None
+def get_chapter_info(session,bookId,wx_cookie):
+    """获取章节信息"""
+    body = {
+        'bookIds': [bookId],
+        'synckeys': [0],
+        'teenmode': 0
+    }
+    r = session.post(WEREAD_CHAPTER_INFO, json=body)
+    if r.ok and "data" in r.json() and len(r.json()["data"]) == 1 and "updated" in r.json()["data"][0]:
+        update = r.json()["data"][0]["updated"]
+        return {item["chapterUid"]: item for item in update}
+    return None
 
 def get_bookmark_list(session,bookId,wx_cookie):
     """获取划线列表 - 包含章节和划线信息"""
@@ -748,7 +760,7 @@ def add_children(page_id, children, notion_token):
         print(f"❌ 添加子内容时出错: {e}")
         return None
 
-def get_children(bookmark_list, summary,reviews):
+def get_children(chapter,bookmark_list, summary,reviews):
     children = []
     grandchild = {}
     
@@ -757,7 +769,8 @@ def get_children(bookmark_list, summary,reviews):
     
     # 添加目录
     children.append(get_table_of_contents())
-    # print(f"笔记📒====--: {bookmark_list}")
+    print(f"笔记📒====--: {bookmark_list}")
+    print(f"章节信息系📒====--: {chapter}")
 
     # 按章节UID分组笔记
     chapter_data = {}
@@ -793,25 +806,25 @@ def get_children(bookmark_list, summary,reviews):
             
 
 
-    for review in reviews:
-            chapterUid = review.get("chapterUid", 1)
-            # 查找相同章节和范围的划线笔记
-            if chapterUid in chapter_data:     
-                if "abstract" not in review:
+    # for review in reviews:
+    #         chapterUid = review.get("chapterUid", 1)
+    #         # 查找相同章节和范围的划线笔记
+    #         if chapterUid in chapter_data:     
+    #             if "abstract" not in review:
                     
-                    if (review.get("chapterName") == chapter_data[chapterUid]["chapterName"]):
+    #                 if (review.get("chapterName") == chapter_data[chapterUid]["chapterName"]):
 
-                        chapter_data[chapterUid]["reviews"].append({
-                            "content": review.get("content", ""),
-                            # 章节想法
-                        })
-                else:
-                    for notes in chapter_data[chapterUid]["notes"]:
+    #                     chapter_data[chapterUid]["reviews"].append({
+    #                         "content": review.get("content", ""),
+    #                         # 章节想法
+    #                     })
+    #             else:
+    #                 for notes in chapter_data[chapterUid]["notes"]:
 
-                        if (review.get("abstract") == notes["markText"]):
-                            notes["reviews"].append({
-                                "content": review.get("content", "")
-                            })
+    #                     if (review.get("abstract") == notes["markText"]):
+    #                         notes["reviews"].append({
+    #                             "content": review.get("content", "")
+    #                         })
                     
                                 
     # print(f"组合📚====--: {chapter_data}")
@@ -1030,7 +1043,7 @@ def main(weread_token, notion_token, database_id):
                     bookmark_list = get_bookmark_list(session,book_id,weread_token)                    
                     summary, reviews = get_review_list(session,book_id,weread_token)
                     bookmark_list.extend(reviews)
-                    
+                    chapter = get_chapter_info(session,book_id,weread_token)
                     # 排序内容
                     bookmark_list = sorted(bookmark_list, key=lambda x: (
                         x.get("chapterUid", 1), 
@@ -1042,7 +1055,7 @@ def main(weread_token, notion_token, database_id):
                     
                     # 构建内容
 
-                    children, grandchild = get_children(bookmark_list, summary, reviews)
+                    children, grandchild = get_children(chapter,bookmark_list, summary, reviews)
                     # 检查是否有内容生成
                     if not children:
                         print(f"❌ 没有生成任何内容块，跳过书籍: {title}")
