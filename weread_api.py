@@ -449,10 +449,13 @@ def get_bookshelf(session):
             'Referer': 'https://weread.qq.com/',
             'Origin': 'https://weread.qq.com'
         }
-        
+        data = {}
         response = session.get(WEREAD_NOTEBOOKS_URL, headers=headers)
         if response.status_code == 200:
-            return response.json()
+            r = response.json()
+            data = r["book"]
+            print(f"book===: {data}")
+            return data
         else:
             print(f"获取书架失败: {response.status_code} - {response.text}")
             return None
@@ -960,12 +963,12 @@ def main(weread_token, notion_token, database_id):
                 continue
                 
             title = book.get('title', '未知标题')
-            print(f"book==: {book}")
+            # print(f"book==: {book}")
             print(f"\n正在处理 [{i+1}/{len(books)}]: {title}")
             
             # 检查书籍是否已存在
             existing_page_id = check(book_id, database_id, notion_token)
-            
+            return
             try:
                 if existing_page_id:
                     # 更新现有书籍 - 同时添加或更新内容
