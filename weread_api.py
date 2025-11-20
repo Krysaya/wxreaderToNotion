@@ -436,20 +436,11 @@ def update_book_in_notion(page_id, book, sort, notion_token):
         print(f"更新书籍时出错: {e}")
         return False
 
-def get_bookshelf(session):
+def get_bookshelf(session,wx_cookie):
     """获取微信读书书架 - 使用完整的请求头"""
     try:
         url = WEREAD_NOTEBOOKS_URL
-        
-        # 使用参考项目的完整请求头
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8', 
-            'Referer': 'https://weread.qq.com/',
-            'Origin': 'https://weread.qq.com'
-        }
-        data = {}
+        headers = get_headers(wx_cookie)       
         response = session.get(WEREAD_NOTEBOOKS_URL, headers=headers)
         if response.status_code == 200:
             r = response.json()["book"]
@@ -944,7 +935,7 @@ def main(weread_token, notion_token, database_id):
             exit(1)
 
         # 获取微信读书书架
-        bookshelf = get_bookshelf(session)
+        bookshelf = get_bookshelf(session,weread_token)
         if not bookshelf:
             print(" 获取书架失败，停止同步")
             return
