@@ -680,7 +680,7 @@ def get_quote(content):
         }
     }
 
-def get_callout(content, style, colorStyle, reviewId,review_callout):
+def get_callout(content, style, colorStyle, reviewId):
 #     # 根据不同的划线样式设置不同的emoji 直线type=0 背景颜色是1 波浪线是2
     emoji = "🌟"
     if style == 0:
@@ -711,7 +711,7 @@ def get_callout(content, style, colorStyle, reviewId,review_callout):
                     "content": content,
                 }
             }],
-            "callout": get_quote(review_callout),
+            # "callout": get_quote(review_callout),
             "color": color
         }
     }
